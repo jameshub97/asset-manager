@@ -28,6 +28,7 @@ export const useAssetStore = defineStore('assets', {
   actions: {
     // Fetch all assets
     async fetchAssets() {
+      alert('test')
       this.loading = true
       this.error = null
 
@@ -43,6 +44,7 @@ export const useAssetStore = defineStore('assets', {
 
     // Fetch single asset
     async fetchAsset(id: string) {
+      alert()
       this.loading = true
       this.error = null
 
