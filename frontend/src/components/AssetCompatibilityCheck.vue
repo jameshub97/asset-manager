@@ -13,7 +13,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <h2 class="green">Asset Compatibility Checker TBD</h2>
+    <p class="green">Asset Compatibility Checker TBD</p>
 </template>
 
 <style scoped>
