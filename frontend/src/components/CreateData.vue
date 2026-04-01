@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useAssetStore } from '@/stores/assetstore'
+
+const store = useAssetStore()
+
 defineProps<{
   msg: string
 }>()
@@ -8,13 +12,17 @@ defineProps<{
   <div class="greetings">
     <h1 class="green">{{ msg }}</h1>
     <h3>
-      <button>create new item!</button>
+      <button @click="() => store.fetchAssets">create new item!</button>
+      <button @click="() => store.fetchAsset">fetch single item</button>
+      <button @click="() => store.createAsset">fetch single item</button>
+      <button @click="() => store.updateAsset">fetch single item</button>
+      <button @click="() =>store.deleteAsset">fetch single item</button>
     </h3>
   </div>
 </template>
 
 <style scoped>
-/* h1 {
+h1 {
   font-weight: 500;
   font-size: 2.6rem;
   position: relative;
@@ -35,5 +43,5 @@ h3 {
   .greetings h3 {
     text-align: left;
   }
-} */
+}
 </style>
