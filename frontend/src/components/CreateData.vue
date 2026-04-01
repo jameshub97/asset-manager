@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
-import { reactive, ref } from 'vue'
+import { reactive, onMounted } from 'vue'
 
 const store = useAssetStore()
-const assetId = ref('')  // User inputs ID here
 
 const newAsset = reactive({
   name: '',
   description: '',
   price: 0
+})
+
+onMounted(() => {
+  store.fetchAssets()
 })
 
 defineProps<{
@@ -22,52 +25,13 @@ defineProps<{
     <h3>
   <div class="button-group">
 
-    <!-- lookup  data -->
-    <!-- Fetch by ID form -->
-    <form @submit.prevent="assetId && store.fetchAsset(assetId)">
-      <input
-        v-model="assetId"
-        placeholder="Enter asset ID"
-        required
-      />
-      <button type="submit">Fetch Asset</button>
-    </form>
-
-    <button @click="() => store.fetchAsset('1')">Fetch single asset</button>
-    <button @click="() => store.fetchAssets()">Fetch all assets</button>
-
-
-    <!-- forum for data -->
     <form @submit.prevent="store.createAsset(newAsset)">
     <input v-model="newAsset.name" placeholder="Name" />
     <input v-model="newAsset.description" placeholder="Description" />
     <input v-model.number="newAsset.price" type="number" placeholder="Price" />
     <button type="submit">Create Asset</button>
     </form>
-
-    <div v-if="store.selectedAsset">
-      <h2>{{ store.selectedAsset.name }}</h2>
-      <p>{{ store.selectedAsset.description }}</p>
-      <p>Price: ${{ store.selectedAsset.price }}</p>
-      <p>ID: {{ store.selectedAsset.id }}</p>
-    </div>
-<div v-if="store.assets.length">
-  <ul>
-<li v-for="asset in store.assets" :key="asset.id">
-  {{ asset.name }} - ${{ asset.price }}
-  <button
-    @click="asset.id && store.fetchAsset(asset.id)"
-    :disabled="!asset.id"
-  >
-    View
-  </button>
-</li>
-  </ul>
-</div>
-<p v-else>No assets loaded</p>
   </div>
-
-
     </h3>
   </div>
 </template>

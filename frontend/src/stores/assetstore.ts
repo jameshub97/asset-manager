@@ -112,6 +112,8 @@ export const useAssetStore = defineStore('assets', {
         throw err
       } finally {
         this.loading = false
+        await this.fetchAssets()
+
       }
     },
 

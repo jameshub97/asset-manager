@@ -2,6 +2,9 @@
 import { RouterLink } from 'vue-router'
 // import HelloWorld from './components/HelloWorld.vue'
 import CreateData from './components/CreateData.vue';
+import AssetList from './components/AssetList.vue';
+import AssetLookup from './components/AssetLookup.vue';
+import AssetOptions from './components/AssetOptions.vue';
 </script>
 
 <template>
@@ -11,12 +14,20 @@ import CreateData from './components/CreateData.vue';
     <div class="wrapper">
       <!-- <HelloWorld msg="You did it!" /> -->
        <CreateData msg="Asset Manager"/>
+
+
       <nav>
         <RouterLink to="/">Hom (page1)</RouterLink>
         <RouterLink to="/about">About (page 2)</RouterLink>
       </nav>
     </div>
+    <div>
+
+       <AssetLookup/>
+       <AssetOptions />
+    </div>
   </header>
+        <AssetList/>
 
   <!-- <RouterView /> -->
 </template>
