@@ -1,5 +1,6 @@
 <!-- components/AssetLookup.vue -->
 <template>
+  <h2 class="green">Lookup an asset</h2>
   <div class="asset-lookup">
     <div class="lookup-control">
       <input

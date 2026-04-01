@@ -1,34 +1,19 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
-import { ref, onMounted } from 'vue'
+import {  onMounted } from 'vue'
 
 const store = useAssetStore()
-const selectedAssetId = ref('')
 
 
 onMounted(() => {
   store.fetchAssets()
 })
 
+
 </script>
 
 <template>
-  <div class="button-group">
-    <h2 class="green">Choose from droplist</h2>
-
-    <!-- lookup  data -->
-    <!-- Fetch by ID form -->
-    <select v-model="selectedAssetId" class="asset-select" @change="() => store.fetchAsset(selectedAssetId)">
-      <option value="">Select an asset</option>
-      <option
-        v-for="asset in store.assets"
-        :key="asset.id"
-        :value="asset.id"
-      >
-        {{ asset.name }} - ${{ asset.price }}
-      </option>
-    </select>
-  </div>
+    <h2 class="green">Asset Compatibility Checker TBD</h2>
 </template>
 
 <style scoped>

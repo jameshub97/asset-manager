@@ -5,6 +5,8 @@ import CreateData from './components/CreateAsset.vue';
 import AssetList from './components/AssetList.vue';
 import AssetLookup from './components/AssetLookup.vue';
 import AssetOptions from './components/AssetOptions.vue';
+import AssetCompatibilityCheck from './components/AssetCompatibilityCheck.vue';
+
 </script>
 
 <template>
@@ -25,6 +27,7 @@ import AssetOptions from './components/AssetOptions.vue';
 
        <AssetLookup/>
        <AssetOptions />
+      <AssetCompatibilityCheck/>
     </div>
   </header>
         <AssetList/>
