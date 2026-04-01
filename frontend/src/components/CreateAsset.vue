@@ -7,29 +7,24 @@ const store = useAssetStore()
 const newAsset = reactive({
   name: '',
   description: '',
-  price: 0
+  price: 0,
 })
-
-
 </script>
 
 <template>
   <div class="greetings">
-          <h1 class="green">Asset Manager</h1>
+    <h1 class="green">Asset Manager</h1>
 
     <h2 class="green">Create an asset</h2>
     <h3>
-  <div class="button-group">
-
-    <form @submit.prevent="store.createAsset(newAsset)">
-    <input v-model="newAsset.name" placeholder="Name" />
-    <input v-model="newAsset.description" placeholder="Description" />
-    <input v-model.number="newAsset.price" type="number" placeholder="Price" />
-            <button type="submit">Create Asset</button>
-
-    </form>
-
-  </div>
+      <div class="button-group">
+        <form @submit.prevent="store.createAsset(newAsset)">
+          <input v-model="newAsset.name" placeholder="Name" />
+          <input v-model="newAsset.description" placeholder="Description" />
+          <input v-model.number="newAsset.price" type="number" placeholder="Price" />
+          <button type="submit">Create Asset</button>
+        </form>
+      </div>
     </h3>
   </div>
 </template>
@@ -53,8 +48,8 @@ h3 {
 
 .button-group {
   display: flex;
-  flex-direction: column;  /* Stack vertically */
-  gap: 8px;                /* Space between buttons */
+  flex-direction: column; /* Stack vertically */
+  gap: 8px; /* Space between buttons */
   align-items: flex-start; /* Align left (or center/stretch) */
 }
 

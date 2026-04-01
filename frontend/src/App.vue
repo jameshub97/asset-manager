@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 // import HelloWorld from './components/HelloWorld.vue'
-import CreateData from './components/CreateAsset.vue';
-import AssetList from './components/AssetList.vue';
-import AssetLookup from './components/AssetLookup.vue';
-import AssetOptions from './components/AssetOptions.vue';
-import AssetCompatibilityCheck from './components/AssetCompatibilityCheck.vue';
-
+import CreateData from './components/CreateAsset.vue'
+import AssetList from './components/AssetList.vue'
+import AssetLookup from './components/AssetLookup.vue'
+import AssetOptions from './components/AssetOptions.vue'
+import AssetCompatibilityCheck from './components/AssetCompatibilityCheck.vue'
 </script>
 
 <template>
@@ -15,8 +14,7 @@ import AssetCompatibilityCheck from './components/AssetCompatibilityCheck.vue';
 
     <div class="wrapper">
       <!-- <HelloWorld msg="You did it!" /> -->
-       <CreateData msg="Asset Manager"/>
-
+      <CreateData msg="Asset Manager" />
 
       <nav>
         <RouterLink to="/">Hom (page1)</RouterLink>
@@ -24,13 +22,12 @@ import AssetCompatibilityCheck from './components/AssetCompatibilityCheck.vue';
       </nav>
     </div>
     <div>
-
-       <AssetLookup/>
-       <AssetOptions />
-      <AssetCompatibilityCheck/>
+      <AssetLookup />
+      <AssetOptions />
+      <AssetCompatibilityCheck />
     </div>
   </header>
-        <AssetList/>
+  <AssetList />
 
   <!-- <RouterView /> -->
 </template>

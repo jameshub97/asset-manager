@@ -5,11 +5,9 @@ import { ref, onMounted } from 'vue'
 const store = useAssetStore()
 const selectedAssetId = ref('')
 
-
 onMounted(() => {
   store.fetchAssets()
 })
-
 </script>
 
 <template>
@@ -18,13 +16,13 @@ onMounted(() => {
 
     <!-- lookup  data -->
     <!-- Fetch by ID form -->
-    <select v-model="selectedAssetId" class="asset-select" @change="() => store.fetchAsset(selectedAssetId)">
+    <select
+      v-model="selectedAssetId"
+      class="asset-select"
+      @change="() => store.fetchAsset(selectedAssetId)"
+    >
       <option value="">Select an asset</option>
-      <option
-        v-for="asset in store.assets"
-        :key="asset.id"
-        :value="asset.id"
-      >
+      <option v-for="asset in store.assets" :key="asset.id" :value="asset.id">
         {{ asset.name }} - ${{ asset.price }}
       </option>
     </select>
@@ -50,8 +48,8 @@ h3 {
 
 .button-group {
   display: flex;
-  flex-direction: column;  /* Stack vertically */
-  gap: 8px;                /* Space between buttons */
+  flex-direction: column; /* Stack vertically */
+  gap: 8px; /* Space between buttons */
   align-items: flex-start; /* Align left (or center/stretch) */
 }
 

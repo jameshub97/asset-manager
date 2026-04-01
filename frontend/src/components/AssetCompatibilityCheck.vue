@@ -1,19 +1,16 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
-import {  onMounted } from 'vue'
+import { onMounted } from 'vue'
 
 const store = useAssetStore()
-
 
 onMounted(() => {
   store.fetchAssets()
 })
-
-
 </script>
 
 <template>
-    <p class="green">Asset Compatibility Checker TBD</p>
+  <p class="green">Asset Compatibility Checker TBD</p>
 </template>
 
 <style scoped>
@@ -35,8 +32,8 @@ h3 {
 
 .button-group {
   display: flex;
-  flex-direction: column;  /* Stack vertically */
-  gap: 8px;                /* Space between buttons */
+  flex-direction: column; /* Stack vertically */
+  gap: 8px; /* Space between buttons */
   align-items: flex-start; /* Align left (or center/stretch) */
 }
 

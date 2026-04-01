@@ -70,11 +70,13 @@ async function search() {
 }
 
 // Expose for parent use
-defineExpose({ clear: () => {
-  searchId.value = ''
-  result.value = null
-  error.value = ''
-}})
+defineExpose({
+  clear: () => {
+    searchId.value = ''
+    result.value = null
+    error.value = ''
+  },
+})
 </script>
 
 <style scoped>

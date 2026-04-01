@@ -11,7 +11,7 @@ export const useAssetStore = defineStore('assets', {
 
   getters: {
     getAssetById: (state) => (id: string) => {
-      return state.assets.find(asset => asset.id === id)
+      return state.assets.find((asset) => asset.id === id)
     },
     assetCount: (state) => state.assets.length,
     isLoading: (state) => state.loading,
@@ -83,7 +83,7 @@ export const useAssetStore = defineStore('assets', {
       this.loading = true
       try {
         const updatedAsset = await api.updateAsset(id, assetData)
-        const index = this.assets.findIndex(a => a.id === id)
+        const index = this.assets.findIndex((a) => a.id === id)
         if (index !== -1) {
           this.assets[index] = updatedAsset
         }
@@ -101,19 +101,28 @@ export const useAssetStore = defineStore('assets', {
 
     async deleteAsset(id: string) {
       this.loading = true
+      this.error = null
+
       try {
         await api.deleteAsset(id)
-        this.assets = this.assets.filter(a => a.id !== id)
+
+        // ✅ Update local state (this is enough)
+        this.assets = this.assets.filter((a) => a.id !== id)
+
+        // ✅ Clear selected if it was deleted
         if (this.selectedAsset?.id === id) {
           this.selectedAsset = null
         }
+
+        // ❌ DON'T call fetchAssets() here - it causes double updates and errors
+        // await this.fetchAssets()
       } catch (err: unknown) {
+        console.error('Delete error for ID:', id, err)
         this.error = err instanceof Error ? err.message : 'Failed to delete asset'
+        console.error('Delete failed:', err)
         throw err
       } finally {
         this.loading = false
-        await this.fetchAssets()
-
       }
     },
 
