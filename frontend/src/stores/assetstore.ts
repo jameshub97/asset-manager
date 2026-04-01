@@ -1,84 +1,86 @@
 import { defineStore } from 'pinia'
-import { api, type Asset } from '@/services/api'  // ← Fixed import
+import { api, type Asset } from '@/services/api'
 
 export const useAssetStore = defineStore('assets', {
-  // State - where data lives
   state: () => ({
-  assets: [] as Asset[],
-  loading: false as boolean,
-  error: null as string | null,
-  selectedAsset: null as Asset | null,
+    assets: [] as Asset[],
+    loading: false as boolean,
+    error: null as string | null,
+    selectedAsset: null as Asset | null,
   }),
 
-  // Getters - computed properties
   getters: {
-    // Get asset by ID
     getAssetById: (state) => (id: string) => {
       return state.assets.find(asset => asset.id === id)
     },
-
-    // Count assets
     assetCount: (state) => state.assets.length,
-
-    // Loading state for UI
     isLoading: (state) => state.loading,
   },
 
-  // Actions - functions that modify state and call API
   actions: {
-    // Fetch all assets
     async fetchAssets() {
-      alert('test')
       this.loading = true
       this.error = null
-
       try {
         this.assets = await api.getAssets()
-      } catch (error) {
-        this.error = "error.message"
-        console.error('Failed to fetch assets:', error)
+      } catch (err: unknown) {
+        this.error = err instanceof Error ? err.message : 'Failed to fetch assets'
+        console.error('Failed to fetch assets:', err)
       } finally {
         this.loading = false
       }
     },
 
-    // Fetch single asset
     async fetchAsset(id: string) {
-      alert()
       this.loading = true
       this.error = null
-
       try {
         this.selectedAsset = await api.getAsset(id)
         return this.selectedAsset
-      } catch (error) {
-        this.error = "error.message"
-        throw error
+      } catch (err: unknown) {
+        this.error = err instanceof Error ? err.message : `Failed to fetch asset ${id}`
+        throw err
       } finally {
         this.loading = false
       }
     },
 
-    // Create new asset
     async createAsset(assetData: Omit<Asset, 'id' | 'createdAt'>) {
+      // ✅ Validation before API call
+      if (!assetData.name?.trim()) {
+        this.error = 'Name is required'
+        throw new Error('Name is required')
+      }
+      if (!assetData.description?.trim()) {
+        this.error = 'Description is required'
+        throw new Error('Description is required')
+      }
+      if (assetData.price === undefined || assetData.price === null) {
+        this.error = 'Price is required'
+        throw new Error('Price is required')
+      }
+      if (assetData.price < 0) {
+        this.error = 'Price must be 0 or greater'
+        throw new Error('Price must be 0 or greater')
+      }
+
       this.loading = true
+      this.error = null
 
       try {
         const newAsset = await api.createAsset(assetData)
         this.assets.push(newAsset)
         return newAsset
-      } catch (error) {
-        this.error = "error.message"
-        throw error
+      } catch (err: unknown) {
+        this.error = err instanceof Error ? err.message : 'Failed to create asset'
+        throw err
       } finally {
         this.loading = false
       }
     },
 
-    // Update existing asset
     async updateAsset(id: string, assetData: Partial<Asset>) {
       this.loading = true
-
       try {
         const updatedAsset = await api.updateAsset(id, assetData)
         const index = this.assets.findIndex(a => a.id === id)
@@ -89,33 +91,30 @@ export const useAssetStore = defineStore('assets', {
           this.selectedAsset = updatedAsset
         }
         return updatedAsset
-      } catch (error) {
-        this.error = "error.message"
-        throw error
+      } catch (err: unknown) {
+        this.error = err instanceof Error ? err.message : 'Failed to update asset'
+        throw err
       } finally {
         this.loading = false
       }
     },
 
-    // Delete asset
     async deleteAsset(id: string) {
       this.loading = true
-
       try {
         await api.deleteAsset(id)
         this.assets = this.assets.filter(a => a.id !== id)
         if (this.selectedAsset?.id === id) {
           this.selectedAsset = null
         }
-      } catch (error) {
-        this.error = "error.message"
-        throw error
+      } catch (err: unknown) {
+        this.error = err instanceof Error ? err.message : 'Failed to delete asset'
+        throw err
       } finally {
         this.loading = false
       }
     },
 
-    // Clear error
     clearError() {
       this.error = null
     },

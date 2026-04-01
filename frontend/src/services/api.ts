@@ -1,4 +1,4 @@
-const API_BASE = 'https://localhost:5001/api' // Your .NET API URL
+const API_BASE = 'http://localhost:5171/api'  // Change from 5001 to 5171
 
 export interface Asset {
   id?: string

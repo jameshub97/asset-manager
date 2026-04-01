@@ -1,19 +1,12 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddOpenApi();
 
-// ✅ ADD CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowViteDev", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",   // Vite default HTTP
-                "https://localhost:5173",  // Vite HTTPS (if used)
-                "http://localhost:3000",   // Alternative dev port
-                "https://localhost:5002"   // Your frontend if different
-              )
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -21,63 +14,87 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseCors("AllowViteDev");
-
 app.UseHttpsRedirection();
 
-var summaries = new[]
+var assets = new List<Asset>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    new Asset { Id = "1", Name = "Asset 1", Description = "Test", Price = 100, CreatedAt = DateTime.UtcNow.ToString("o") },
+    new Asset { Id = "2", Name = "Asset 2", Description = "Test 2", Price = 200, CreatedAt = DateTime.UtcNow.ToString("o") }
 };
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+// GET all - uses shared list
+app.MapGet("/api/assets", () => Results.Ok(assets));
 
-// ✅ ADD YOUR ASSETS API (example)
-app.MapGet("/api/assets", () =>
+// GET single - uses shared list
+app.MapGet("/api/assets/{id}", (string id) =>
 {
-    return new[] 
-    {
-        new { Id = "1", Name = "Asset 1", Description = "Test", Price = 100, CreatedAt = DateTime.UtcNow },
-        new { Id = "2", Name = "Asset 2", Description = "Test 2", Price = 200, CreatedAt = DateTime.UtcNow }
-    };
+    var asset = assets.FirstOrDefault(a => a.Id == id);
+    return asset is null 
+        ? Results.NotFound(new { message = $"Asset {id} not found" }) 
+        : Results.Ok(asset);
 });
 
+// POST - adds to shared list ✅
 app.MapPost("/api/assets", (CreateAssetRequest request) =>
 {
-    var newAsset = new 
+    var newAsset = new Asset
     { 
         Id = Guid.NewGuid().ToString(),
         Name = request.Name,
         Description = request.Description,
         Price = request.Price,
-        CreatedAt = DateTime.UtcNow
+        CreatedAt = DateTime.UtcNow.ToString("o")
     };
+    
+    assets.Add(newAsset);  // ✅ Now in shared list!
+    
     return Results.Created($"/api/assets/{newAsset.Id}", newAsset);
 });
 
+// PUT - update in shared list
+app.MapPut("/api/assets/{id}", (string id, UpdateAssetRequest req) =>
+{
+    var asset = assets.FirstOrDefault(a => a.Id == id);
+    if (asset is null) return Results.NotFound();
+    
+    asset.Name = req.Name ?? asset.Name;
+    asset.Description = req.Description ?? asset.Description;
+    asset.Price = req.Price ?? asset.Price;
+    
+    return Results.Ok(asset);
+});
+
+// DELETE - remove from shared list
+app.MapDelete("/api/assets/{id}", (string id) =>
+{
+    var asset = assets.FirstOrDefault(a => a.Id == id);
+    if (asset is null) return Results.NotFound();
+    
+    assets.Remove(asset);
+    return Results.NoContent();
+});
+
 app.Run();
+
+class Asset
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public decimal? Price { get; set; }
+    public string? CreatedAt { get; set; }
+}
+
+record CreateAssetRequest(string Name, string Description, decimal? Price);
+record UpdateAssetRequest(string? Name, string? Description, decimal? Price);
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
-
-record CreateAssetRequest(string Name, string Description, decimal Price);
