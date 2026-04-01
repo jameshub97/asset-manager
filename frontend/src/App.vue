@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 // import HelloWorld from './components/HelloWorld.vue'
-import CreateData from './components/CreateData.vue';
+import CreateData from './components/CreateAsset.vue';
 import AssetList from './components/AssetList.vue';
 import AssetLookup from './components/AssetLookup.vue';
 import AssetOptions from './components/AssetOptions.vue';

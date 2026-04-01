@@ -22,6 +22,8 @@ defineProps<{
 <template>
   <div class="greetings">
     <h1 class="green">{{ msg }}</h1>
+    <h2 class="green">Create an asset</h2>
+
     <h3>
   <div class="button-group">
 
@@ -29,8 +31,9 @@ defineProps<{
     <input v-model="newAsset.name" placeholder="Name" />
     <input v-model="newAsset.description" placeholder="Description" />
     <input v-model.number="newAsset.price" type="number" placeholder="Price" />
-    <button type="submit">Create Asset</button>
     </form>
+        <button type="submit">Create Asset</button>
+
   </div>
     </h3>
   </div>
