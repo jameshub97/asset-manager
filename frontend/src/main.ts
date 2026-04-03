@@ -1,5 +1,5 @@
 import './assets/main.css'
-import 'vue-toastification/dist/index.css'
+import './assets/vendor/vue-toastification.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

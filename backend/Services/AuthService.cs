@@ -2,7 +2,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using backend.Data;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using backend.Models;
 
 namespace backend.Services;
@@ -10,25 +12,35 @@ namespace backend.Services;
 public class AuthService
 {
     private readonly string _jwtSecret = "your-super-secret-jwt-key-here-make-it-long-and-secure"; // Move to config later
-    private readonly List<User> _users = new(); // Move to database later
+    private readonly AssetDbContext _db;
+
+    public AuthService(AssetDbContext db)
+    {
+        _db = db;
+    }
     
     public bool Register(RegisterRequest request)
     {
-        if (_users.Any(u => u.Username == request.Username))
+        var username = request.Username.Trim();
+        var email = request.Email.Trim();
+
+        if (_db.Users.Any(u => u.Username == username || u.Email == email))
             return false;
-        
-        _users.Add(new User
+
+        _db.Users.Add(new User
         {
-            Username = request.Username,
-            Email = request.Email,
+            Username = username,
+            Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
         });
+
+        _db.SaveChanges();
         return true;
     }
     
     public AuthResponse? Login(LoginRequest request)
     {
-        var user = _users.FirstOrDefault(u => u.Username == request.Username);
+        var user = _db.Users.AsNoTracking().FirstOrDefault(u => u.Username == request.Username);
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return null;
         

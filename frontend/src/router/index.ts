@@ -13,8 +13,7 @@ const router = createRouter({
     {
       path: '/home',
       name: 'home',
-      component: () => import('@/views/HomeView.vue'),
-      meta: { requiresAuth: true },
+      redirect: '/assets',
     },
     {
       path: '/',
@@ -37,7 +36,7 @@ router.beforeEach((to, from, next) => {
   }
   // If user is logged in and tries to go to login page
   else if (to.path === '/login' && auth.isAuthenticated()) {
-    next('/home')
+    next('/assets')
   }
   else {
     next()

@@ -11,6 +11,7 @@ public class AssetDbContext : DbContext
 
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +34,18 @@ public class AssetDbContext : DbContext
             entity.Property(v => v.Id).ValueGeneratedOnAdd();
             entity.Property(v => v.Name).IsRequired();
             entity.Property(v => v.Email).IsRequired();
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(u => u.Id);
+            entity.Property(u => u.Id).ValueGeneratedOnAdd();
+            entity.Property(u => u.Username).IsRequired();
+            entity.Property(u => u.Email).IsRequired();
+            entity.Property(u => u.PasswordHash).IsRequired();
+            entity.Property(u => u.CreatedAt).IsRequired();
+            entity.HasIndex(u => u.Username).IsUnique();
+            entity.HasIndex(u => u.Email).IsUnique();
         });
     }
 }

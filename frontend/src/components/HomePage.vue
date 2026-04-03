@@ -53,10 +53,10 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
-  min-height: 100vh;
+  min-height: 100%;
   background: #f9fafb;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: stretch;
 }
 
 .content-card {
@@ -69,6 +69,7 @@ const handleLogout = () => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
   width: 100%;
   max-width: 1400px;
+  margin: 0 auto;
 }
 
 .header {
@@ -121,7 +122,7 @@ h1 {
 .content-wrapper {
   display: flex;
   gap: 2rem;
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .left-panel {
