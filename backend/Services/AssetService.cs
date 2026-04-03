@@ -14,9 +14,39 @@ public class AssetService
         _db = db;
     }
 
-    public IEnumerable<Asset> GetAllAssets()
+    public PagedResponse<Asset> GetAssets(int page = 1, int pageSize = 8)
     {
-        return _db.Assets.AsNoTracking().ToList();
+        var normalizedPage = page < 1 ? 1 : page;
+        var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = _db.Assets
+            .AsNoTracking()
+            .OrderByDescending(a => a.CreatedAt);
+
+        var totalCount = query.Count();
+        var totalPages = totalCount == 0
+            ? 1
+            : (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
+
+        if (normalizedPage > totalPages)
+        {
+            normalizedPage = totalPages;
+        }
+
+        var items = query
+            .Skip((normalizedPage - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
+            .ToList();
+
+        return new PagedResponse<Asset>(
+            Items: items,
+            Page: normalizedPage,
+            PageSize: normalizedPageSize,
+            TotalCount: totalCount,
+            TotalPages: totalPages,
+            HasNextPage: normalizedPage < totalPages,
+            HasPreviousPage: normalizedPage > 1
+        );
     }
 
     public Asset? GetAsset(string id)

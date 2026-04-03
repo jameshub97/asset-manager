@@ -64,9 +64,10 @@ const handleLogout = () => {
   flex-direction: column;
   gap: 1.5rem;
   background: white;
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.03);
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;

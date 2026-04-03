@@ -9,6 +9,16 @@ export interface Asset {
   userId?: string
 }
 
+export interface PagedResponse<T> {
+  items: T[]
+  page: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
 export const api = {
   async request(endpoint: string, options?: RequestInit) {
     const token = localStorage.getItem('authToken')
@@ -42,8 +52,8 @@ export const api = {
   },
 
   // Asset endpoints
-  getAssets(): Promise<Asset[]> {
-    return this.request('/assets')
+  getAssets(page = 1, pageSize = 8): Promise<PagedResponse<Asset>> {
+    return this.request(`/assets?page=${page}&pageSize=${pageSize}`)
   },
 
   getAsset(id: string): Promise<Asset> {

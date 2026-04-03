@@ -5,9 +5,11 @@ import UpdateAsset from './UpdateAsset.vue'
 import AssetDetail from './AssetDetail.vue'
 import CompareAssets from './CompareAssets.vue'
 import type { Asset } from '@/services/api'
+import { useToast } from 'vue-toastification'
 
 const store = useAssetStore()
 const editingAsset = ref<Asset | null>(null)
+const toast = useToast()
 
 onMounted(() => {
   store.fetchAssets()
@@ -23,6 +25,18 @@ const handleUpdateClose = () => {
 
 const handleDetailClose = () => {
   store.selectedAsset = null
+}
+
+const handleDelete = async (asset: Asset) => {
+  if (!asset.id) return
+
+  try {
+    await store.deleteAsset(asset.id)
+    toast.success(`Deleted ${asset.name}.`)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to delete asset.'
+    toast.error(message)
+  }
 }
 </script>
 
@@ -72,7 +86,7 @@ const handleDetailClose = () => {
               {{ store.isInComparison(asset.id) ? '✓ Compare' : 'Compare' }}
             </button>
             <button
-              @click="asset.id && store.deleteAsset(asset.id)"
+              @click="handleDelete(asset)"
               :disabled="!asset.id"
               class="btn-delete"
             >
@@ -80,6 +94,30 @@ const handleDetailClose = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      <div v-if="store.totalCount > 0" class="pagination">
+        <button
+          class="pagination-btn"
+          :disabled="store.loading || !store.currentPage || store.currentPage <= 1"
+          @click="store.goToPage(store.currentPage - 1)"
+        >
+          Previous
+        </button>
+
+        <p class="pagination-meta">
+          Page {{ store.currentPage }} of {{ store.totalPages }}
+          <span class="dot">•</span>
+          {{ store.totalCount }} total assets
+        </p>
+
+        <button
+          class="pagination-btn"
+          :disabled="store.loading || !store.totalPages || store.currentPage >= store.totalPages"
+          @click="store.goToPage(store.currentPage + 1)"
+        >
+          Next
+        </button>
       </div>
     </div>
     <div v-else class="empty-state">
@@ -260,6 +298,49 @@ h2 {
   text-align: center;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid rgba(66, 184, 131, 0.18);
+}
+
+.pagination-btn {
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid rgba(66, 184, 131, 0.35);
+  background: white;
+  color: #1f2937;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: #42b883;
+  color: #0f766e;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-meta {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.dot {
+  margin: 0 0.4rem;
+  color: #9ca3af;
+}
+
 @media (max-width: 768px) {
   .assets-grid {
     grid-template-columns: 1fr;
@@ -267,6 +348,15 @@ h2 {
 
   .asset-card {
     padding: 1rem;
+  }
+
+  .pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-btn {
+    width: 100%;
   }
 }
 </style>

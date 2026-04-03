@@ -10,9 +10,9 @@ public static class AssetEndpoints
     {
         var group = app.MapGroup("/api/assets").RequireAuthorization();
         
-        // GET all
-        group.MapGet("/", (AssetService service) => 
-            Results.Ok(service.GetAllAssets()));
+        // GET paged
+        group.MapGet("/", (AssetService service, int page = 1, int pageSize = 8) =>
+            Results.Ok(service.GetAssets(page, pageSize)));
         
         // GET single
         group.MapGet("/{id}", (string id, AssetService service) =>

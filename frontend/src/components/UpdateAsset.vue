@@ -2,6 +2,7 @@
 import { useAssetStore } from '@/stores/assetstore'
 import { reactive } from 'vue'
 import type { Asset } from '@/services/api'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps<{
   asset: Asset
@@ -12,6 +13,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useAssetStore()
+const toast = useToast()
 
 const formData = reactive({
   name: props.asset.name,
@@ -28,8 +30,11 @@ const handleSubmit = async () => {
       description: formData.description,
       price: formData.price,
     })
+    toast.success(`Updated ${formData.name || 'asset'}.`)
     emit('close')
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to update asset.'
+    toast.error(message)
     console.error('Update failed:', err)
   }
 }

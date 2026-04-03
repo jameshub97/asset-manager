@@ -27,11 +27,15 @@ body,
   display: flex;
   flex-direction: column;
   max-width: 80vw;
-  margin: 0 auto;
+  margin: 1rem auto;
   width: 100%;
   min-height: 100vh;
   height: auto;
-  background: #f9fafb;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
 }
 
 nav {

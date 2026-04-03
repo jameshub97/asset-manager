@@ -8,13 +8,17 @@ export const useAssetStore = defineStore('assets', {
     error: null as string | null,
     selectedAsset: null as Asset | null,
     comparisonAssets: [] as Asset[],
+    currentPage: 1 as number,
+    pageSize: 8 as number,
+    totalCount: 0 as number,
+    totalPages: 1 as number,
   }),
 
   getters: {
     getAssetById: (state) => (id: string) => {
       return state.assets.find((asset) => asset.id === id)
     },
-    assetCount: (state) => state.assets.length,
+    assetCount: (state) => state.totalCount,
     isLoading: (state) => state.loading,
     isInComparison: (state) => (id: string | undefined) => {
       if (!id) return false
@@ -23,11 +27,18 @@ export const useAssetStore = defineStore('assets', {
   },
 
   actions: {
-    async fetchAssets() {
+    async fetchAssets(page?: number) {
       this.loading = true
       this.error = null
       try {
-        this.assets = await api.getAssets()
+        const targetPage = page ?? this.currentPage
+        const response = await api.getAssets(targetPage, this.pageSize)
+
+        this.assets = response.items
+        this.currentPage = response.page
+        this.pageSize = response.pageSize
+        this.totalCount = response.totalCount
+        this.totalPages = response.totalPages
       } catch (err: unknown) {
         this.error = err instanceof Error ? err.message : 'Failed to fetch assets'
         console.error('Failed to fetch assets:', err)
@@ -74,7 +85,7 @@ export const useAssetStore = defineStore('assets', {
 
       try {
         const newAsset = await api.createAsset(assetData)
-        this.assets.push(newAsset)
+        await this.fetchAssets(1)
         return newAsset
       } catch (err: unknown) {
         this.error = err instanceof Error ? err.message : 'Failed to create asset'
@@ -111,16 +122,16 @@ export const useAssetStore = defineStore('assets', {
       try {
         await api.deleteAsset(id)
 
-        // ✅ Update local state (this is enough)
-        this.assets = this.assets.filter((a) => a.id !== id)
-
         // ✅ Clear selected if it was deleted
         if (this.selectedAsset?.id === id) {
           this.selectedAsset = null
         }
 
-        // ❌ DON'T call fetchAssets() here - it causes double updates and errors
-        // await this.fetchAssets()
+        const nextPage = this.assets.length === 1 && this.currentPage > 1
+          ? this.currentPage - 1
+          : this.currentPage
+
+        await this.fetchAssets(nextPage)
       } catch (err: unknown) {
         console.error('Delete error for ID:', id, err)
         this.error = err instanceof Error ? err.message : 'Failed to delete asset'
@@ -145,6 +156,12 @@ export const useAssetStore = defineStore('assets', {
 
     clearComparison() {
       this.comparisonAssets = []
+    },
+
+    async goToPage(page: number) {
+      if (this.loading) return
+      if (page < 1 || page > this.totalPages || page === this.currentPage) return
+      await this.fetchAssets(page)
     },
 
     clearError() {
