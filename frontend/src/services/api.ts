@@ -6,6 +6,7 @@ export interface Asset {
   description: string
   price?: number
   createdAt?: string
+  userId?: string
 }
 
 export const api = {

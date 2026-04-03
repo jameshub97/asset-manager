@@ -33,7 +33,7 @@ public class AssetService
             Description = request.Description,
             Price = request.Price,
             CreatedAt = DateTime.UtcNow.ToString("o"),
-            UserId = string.Empty
+            UserId = request.UserId ?? string.Empty
         };
 
         _db.Assets.Add(asset);

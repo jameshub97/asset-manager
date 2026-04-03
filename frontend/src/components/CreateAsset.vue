@@ -12,6 +12,7 @@ const newAsset = reactive({
   name: '',
   description: '',
   price: 0,
+  userId: localStorage.getItem('userId') || '',
 })
 
 const handleCreate = async () => {
@@ -21,6 +22,7 @@ const handleCreate = async () => {
     newAsset.name = ''
     newAsset.description = ''
     newAsset.price = 0
+    newAsset.userId = localStorage.getItem('userId') || ''
     toast.success('Asset created successfully.')
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to create asset.'
