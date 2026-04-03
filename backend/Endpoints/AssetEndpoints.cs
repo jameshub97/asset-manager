@@ -8,7 +8,7 @@ public static class AssetEndpoints
 {
     public static void MapAssetEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/assets").RequireAuthorization();
+        var group = app.MapGroup("/api/assets");
         
         // GET paged
         group.MapGet("/", (AssetService service, int page = 1, int pageSize = 8) =>
@@ -35,7 +35,7 @@ public static class AssetEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        });
+        }).RequireAuthorization();
         
         // PUT update
         group.MapPut("/{id}", (string id, UpdateAssetRequest request, AssetService service) =>
@@ -50,7 +50,7 @@ public static class AssetEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        });
+        }).RequireAuthorization();
         
         // DELETE
         group.MapDelete("/{id}", (string id, AssetService service) =>
@@ -58,6 +58,6 @@ public static class AssetEndpoints
             return service.DeleteAsset(id) 
                 ? Results.NoContent()
                 : Results.NotFound();
-        });
+        }).RequireAuthorization();
     }
 }

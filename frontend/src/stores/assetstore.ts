@@ -34,11 +34,20 @@ export const useAssetStore = defineStore('assets', {
         const targetPage = page ?? this.currentPage
         const response = await api.getAssets(targetPage, this.pageSize)
 
-        this.assets = response.items
-        this.currentPage = response.page
-        this.pageSize = response.pageSize
-        this.totalCount = response.totalCount
-        this.totalPages = response.totalPages
+        // Support paged responses and legacy array responses.
+        if (Array.isArray(response)) {
+          this.assets = response
+          this.currentPage = 1
+          this.pageSize = response.length || this.pageSize
+          this.totalCount = response.length
+          this.totalPages = 1
+        } else {
+          this.assets = response.items
+          this.currentPage = response.page
+          this.pageSize = response.pageSize
+          this.totalCount = response.totalCount
+          this.totalPages = response.totalPages
+        }
       } catch (err: unknown) {
         this.error = err instanceof Error ? err.message : 'Failed to fetch assets'
         console.error('Failed to fetch assets:', err)
