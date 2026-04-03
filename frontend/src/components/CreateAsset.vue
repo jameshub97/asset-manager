@@ -1,24 +1,39 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
 import { reactive } from 'vue'
+import { auth } from '@/services/auth'
 
 const store = useAssetStore()
+const isGuest = auth.isGuest()
 
 const newAsset = reactive({
   name: '',
   description: '',
   price: 0,
 })
+
+const handleCreate = async () => {
+  if (isGuest) return
+  await store.createAsset(newAsset)
+}
 </script>
 
 <template>
   <div class="create-asset">
     <h2 class="green">Create an asset</h2>
-    <form @submit.prevent="store.createAsset(newAsset)">
-      <input v-model="newAsset.name" placeholder="Name" />
-      <input v-model="newAsset.description" placeholder="Description" />
-      <input v-model.number="newAsset.price" type="number" placeholder="Price" />
-      <button type="submit">Create Asset</button>
+    <p v-if="isGuest" class="guest-note">Guest mode: creating assets is disabled.</p>
+    <form @submit.prevent="handleCreate">
+      <input v-model="newAsset.name" placeholder="Name" :disabled="isGuest || store.loading" />
+      <input v-model="newAsset.description" placeholder="Description" :disabled="isGuest || store.loading" />
+      <input
+        v-model.number="newAsset.price"
+        type="number"
+        placeholder="Price"
+        min="0"
+        step="0.01"
+        :disabled="isGuest || store.loading"
+      />
+      <button type="submit" :disabled="isGuest || store.loading">Create Asset</button>
     </form>
   </div>
 </template>
@@ -32,6 +47,16 @@ const newAsset = reactive({
 
 h2 {
   margin: 0;
+}
+
+.guest-note {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.875rem;
 }
 
 form {

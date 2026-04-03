@@ -5,6 +5,7 @@ using backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,11 +53,26 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Apply pending EF Core migrations at startup.
+// Apply pending EF Core migrations at startup with retry for Docker DB readiness.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AssetDbContext>();
-    dbContext.Database.Migrate();
+    const int maxAttempts = 10;
+    var attempt = 0;
+
+    while (true)
+    {
+        try
+        {
+            dbContext.Database.Migrate();
+            break;
+        }
+        catch (NpgsqlException) when (attempt < maxAttempts)
+        {
+            attempt++;
+            Thread.Sleep(2000);
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())

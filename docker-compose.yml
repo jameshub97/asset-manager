@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   postgres:
     image: postgres:16
@@ -7,9 +6,11 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - asset-net
 
   backend:
     build:
@@ -39,3 +40,6 @@ services:
 networks:
   asset-net:
     driver: bridge
+
+volumes:
+  pgdata:
