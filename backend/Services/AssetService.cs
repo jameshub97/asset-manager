@@ -26,6 +26,18 @@ public class AssetService
 
     public Asset CreateAsset(CreateAssetRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.Name))
+            throw new ArgumentException("Name is required.");
+
+        if (string.IsNullOrWhiteSpace(request.Description))
+            throw new ArgumentException("Description is required.");
+
+        if (!request.Price.HasValue)
+            throw new ArgumentException("Price is required.");
+
+        if (request.Price.Value < 0)
+            throw new ArgumentException("Price must be 0 or greater.");
+
         var asset = new Asset
         {
             Id = Guid.NewGuid().ToString(),
@@ -46,6 +58,15 @@ public class AssetService
     {
         var asset = _db.Assets.FirstOrDefault(a => a.Id == id);
         if (asset is null) return false;
+
+        if (request.Name is not null && string.IsNullOrWhiteSpace(request.Name))
+            throw new ArgumentException("Name cannot be empty.");
+
+        if (request.Description is not null && string.IsNullOrWhiteSpace(request.Description))
+            throw new ArgumentException("Description cannot be empty.");
+
+        if (request.Price.HasValue && request.Price.Value < 0)
+            throw new ArgumentException("Price must be 0 or greater.");
 
         if (request.Name is not null) asset.Name = request.Name;
         if (request.Description is not null) asset.Description = request.Description;

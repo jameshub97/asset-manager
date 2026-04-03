@@ -26,16 +26,30 @@ public static class AssetEndpoints
         // POST create
         group.MapPost("/", (CreateAssetRequest request, AssetService service) =>
         {
-            var asset = service.CreateAsset(request);
-            return Results.Created($"/api/assets/{asset.Id}", asset);
+            try
+            {
+                var asset = service.CreateAsset(request);
+                return Results.Created($"/api/assets/{asset.Id}", asset);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
         });
         
         // PUT update
         group.MapPut("/{id}", (string id, UpdateAssetRequest request, AssetService service) =>
         {
-            return service.UpdateAsset(id, request) 
-                ? Results.Ok(service.GetAsset(id))
-                : Results.NotFound();
+            try
+            {
+                return service.UpdateAsset(id, request)
+                    ? Results.Ok(service.GetAsset(id))
+                    : Results.NotFound();
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
         });
         
         // DELETE

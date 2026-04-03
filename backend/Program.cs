@@ -63,20 +63,23 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AssetDbContext>();
-    const int maxAttempts = 10;
-    var attempt = 0;
-
-    while (true)
+    if (dbContext.Database.IsRelational())
     {
-        try
+        const int maxAttempts = 10;
+        var attempt = 0;
+
+        while (true)
         {
-            dbContext.Database.Migrate();
-            break;
-        }
-        catch (NpgsqlException) when (attempt < maxAttempts)
-        {
-            attempt++;
-            Thread.Sleep(2000);
+            try
+            {
+                dbContext.Database.Migrate();
+                break;
+            }
+            catch (NpgsqlException) when (attempt < maxAttempts)
+            {
+                attempt++;
+                Thread.Sleep(2000);
+            }
         }
     }
 }
@@ -97,3 +100,5 @@ app.MapAssetEndpoints();
 app.MapAuthEndpoints();
 
 app.Run();
+
+public partial class Program;

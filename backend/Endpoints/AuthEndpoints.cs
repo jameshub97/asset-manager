@@ -12,10 +12,10 @@ public static class AuthEndpoints
         
         group.MapPost("/register", (RegisterRequest request, AuthService service) =>
         {
-            var success = service.Register(request);
-            return success 
+            var result = service.Register(request);
+            return result.Success
                 ? Results.Ok(new { message = "User registered successfully" })
-                : Results.BadRequest(new { message = "Username already exists" });
+                : Results.BadRequest(new { message = result.Error ?? "Registration failed" });
         });
         
         group.MapPost("/login", (LoginRequest request, AuthService service) =>

@@ -1,5 +1,6 @@
 // backend/Services/AuthService.cs
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
 using backend.Data;
@@ -19,28 +20,45 @@ public class AuthService
         _db = db;
     }
     
-    public bool Register(RegisterRequest request)
+    public (bool Success, string? Error) Register(RegisterRequest request)
     {
         var username = request.Username.Trim();
         var email = request.Email.Trim();
+        var password = request.Password;
+
+        if (string.IsNullOrWhiteSpace(username))
+            return (false, "Username is required.");
+
+        if (string.IsNullOrWhiteSpace(email))
+            return (false, "Email is required.");
+
+        if (!IsValidEmail(email))
+            return (false, "Email format is invalid.");
+
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+            return (false, "Password must be at least 6 characters.");
 
         if (_db.Users.Any(u => u.Username == username || u.Email == email))
-            return false;
+            return (false, "Username or email already exists.");
 
         _db.Users.Add(new User
         {
             Username = username,
             Email = email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
         });
 
         _db.SaveChanges();
-        return true;
+        return (true, null);
     }
     
     public AuthResponse? Login(LoginRequest request)
     {
-        var user = _db.Users.AsNoTracking().FirstOrDefault(u => u.Username == request.Username);
+        var username = request.Username.Trim();
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(request.Password))
+            return null;
+
+        var user = _db.Users.AsNoTracking().FirstOrDefault(u => u.Username == username);
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return null;
         
@@ -69,5 +87,18 @@ public class AuthService
         );
         
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static bool IsValidEmail(string email)
+    {
+        try
+        {
+            _ = new MailAddress(email);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
