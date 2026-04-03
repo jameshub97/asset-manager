@@ -28,8 +28,6 @@ const handleDetailClose = () => {
 
 <template>
   <div class="asset-list-container">
-    <h2 class="green">Asset List</h2>
-
     <div v-if="store.assets.length" class="list-content">
       <!-- Asset Detail Section -->
       <AssetDetail
