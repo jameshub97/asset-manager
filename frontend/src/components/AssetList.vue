@@ -11,6 +11,7 @@ onMounted(() => {
 
 <template>
   <div class="button-group">
+      <h2 class="green">Asset List</h2>
     <div v-if="store.assets.length">
       <div v-if="store.selectedAsset">
         <h2>{{ store.selectedAsset.name }}</h2>
