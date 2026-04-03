@@ -173,6 +173,14 @@ export const useAssetStore = defineStore('assets', {
       await this.fetchAssets(page)
     },
 
+    async setPageSize(pageSize: number) {
+      if (this.loading) return
+      if (pageSize < 1 || pageSize === this.pageSize) return
+
+      this.pageSize = pageSize
+      await this.fetchAssets(1)
+    },
+
     clearError() {
       this.error = null
     },

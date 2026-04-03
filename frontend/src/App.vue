@@ -16,25 +16,20 @@ import { RouterView } from 'vue-router'
 }
 
 html,
-body,
-#app {
+body {
   min-height: 100%;
   width: 100%;
+  background: #ffffff;
 }
 
 #app {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   display: flex;
   flex-direction: column;
-  max-width: 80vw;
-  margin: 1rem auto;
   width: 100%;
   min-height: 100vh;
   height: auto;
   background: #ffffff;
-  border-radius: 24px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
   overflow: hidden;
 }
 
@@ -62,13 +57,13 @@ nav a.router-link-active {
 
 @media (max-width: 1200px) {
   #app {
-    max-width: 90vw;
+    width: 100%;
   }
 }
 
 @media (max-width: 768px) {
   #app {
-    max-width: 100vw;
+    width: 100%;
   }
 }
 </style>

@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { auth } from '@/services/auth'
 import { onMounted } from 'vue'
 import AssetList from './AssetList.vue'
-import AssetLookup from './AssetLookup.vue'
 import AssetOptions from './AssetOptions.vue'
 import CreateAsset from './CreateAsset.vue'
 
@@ -37,7 +36,6 @@ const handleLogout = () => {
           <div class="left-grid">
             <CreateAsset/>
             <AssetOptions />
-            <AssetLookup />
           </div>
         </div>
         <div class="right-panel">
@@ -52,9 +50,10 @@ const handleLogout = () => {
 .home-container {
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
+  padding: 0.5rem;
   min-height: 100%;
-  background: #f9fafb;
+  width: 100%;
+  background: white;
   justify-content: flex-start;
   align-items: stretch;
 }
@@ -62,23 +61,26 @@ const handleLogout = () => {
 .content-card {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   background: white;
-  border-radius: 20px;
-  padding: 2rem;
+  border-radius: 16px;
+  padding: 1rem;
   border: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.03);
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
+  min-height: 90vh;
+  margin: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid rgba(66, 184, 131, 0.2);
+  flex-shrink: 0;
 }
 
 .header > div {
@@ -93,7 +95,7 @@ const handleLogout = () => {
 
 h1 {
   font-weight: 500;
-  font-size: 2.6rem;
+  font-size: 2rem;
   margin: 0;
 }
 
@@ -123,28 +125,33 @@ h1 {
 .content-wrapper {
   display: flex;
   gap: 2rem;
-  flex: 0 0 auto;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .left-panel {
-  flex: 1;
+  flex: 0 0 320px;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .left-grid {
   display: grid;
   grid-template-rows: auto auto auto;
-  gap: 1.5rem;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 .left-grid > * {
-  padding: 1.5rem;
+  padding: 1rem;
   background: linear-gradient(135deg, rgba(66, 184, 131, 0.1) 0%, rgba(51, 160, 111, 0.05) 100%);
-  border-radius: 8px;
+  border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(66, 184, 131, 0.2);
+  font-size: 1rem;
 }
 
 .right-panel {
@@ -152,6 +159,7 @@ h1 {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 h3 {
@@ -164,6 +172,16 @@ h3 {
 }
 
 @media (max-width: 768px) {
+  .home-container {
+    padding: 0.5rem;
+  }
+
+  .content-card {
+    width: 95%;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
   .header {
     flex-direction: column;
     gap: 1rem;
@@ -172,15 +190,18 @@ h3 {
 
   .content-wrapper {
     flex-direction: column;
-    gap: 1.5rem;
-    flex: auto;
+    gap: 1rem;
+  }
+
+  .left-panel {
+    flex: 0 0 auto;
   }
 
   .left-grid {
     grid-template-rows: auto auto auto;
+    gap: 0.75rem;
   }
 
-  .left-panel,
   .right-panel {
     flex: auto;
   }

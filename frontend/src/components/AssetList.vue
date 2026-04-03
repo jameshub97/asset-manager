@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import UpdateAsset from './UpdateAsset.vue'
-import AssetDetail from './AssetDetail.vue'
-import CompareAssets from './CompareAssets.vue'
+import PriceDistributionDetail from './PriceDistributionDetail.vue'
 import type { Asset } from '@/services/api'
 import { useToast } from 'vue-toastification'
 
 const store = useAssetStore()
 const editingAsset = ref<Asset | null>(null)
+const lookupId = ref('')
+const lookupLoading = ref(false)
+const lookupError = ref('')
+const lookupResult = ref<Asset | null>(null)
 const toast = useToast()
+const pageSizeOptions = [8, 12, 24, 48]
+
+const displayedAssets = computed(() => {
+  return lookupResult.value ? [lookupResult.value] : store.assets
+})
 
 onMounted(() => {
   store.fetchAssets()
@@ -27,11 +35,38 @@ const handleDetailClose = () => {
   store.selectedAsset = null
 }
 
+const clearLookup = () => {
+  lookupId.value = ''
+  lookupError.value = ''
+  lookupResult.value = null
+}
+
+const handleLookup = async () => {
+  const trimmedId = lookupId.value.trim()
+  if (!trimmedId) return
+
+  lookupLoading.value = true
+  lookupError.value = ''
+
+  try {
+    const asset = await store.fetchAsset(trimmedId)
+    lookupResult.value = asset
+  } catch (err: unknown) {
+    lookupResult.value = null
+    lookupError.value = err instanceof Error ? err.message : 'Failed to fetch asset.'
+  } finally {
+    lookupLoading.value = false
+  }
+}
+
 const handleDelete = async (asset: Asset) => {
   if (!asset.id) return
 
   try {
     await store.deleteAsset(asset.id)
+    if (lookupResult.value?.id === asset.id) {
+      clearLookup()
+    }
     toast.success(`Deleted ${asset.name}.`)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to delete asset.'
@@ -43,81 +78,130 @@ const handleDelete = async (asset: Asset) => {
 <template>
   <div class="asset-list-container">
     <div v-if="store.assets.length" class="list-content">
-      <!-- Asset Detail Section -->
-      <AssetDetail
-        :asset="store.selectedAsset"
-        @close="handleDetailClose"
-      />
+      <div class="main-layout">
+        <div class="left-column">
+          <div class="table-toolbar">
+            <div class="table-toolbar-copy">
+              <h3>Assets</h3>
+              <p>Search by asset ID directly in the table.</p>
+            </div>
 
-      <!-- Compare Section -->
-      <CompareAssets />
-      <div class="assets-grid">
-        <div
-          v-for="asset in store.assets"
-          :key="asset.id"
-          class="asset-card"
-          :class="{ active: store.selectedAsset?.id === asset.id }"
-        >
-          <div class="asset-header">
-            <h4>{{ asset.name }}</h4>
-            <span class="price">${{ asset.price }}</span>
+            <div class="lookup-inline">
+              <label v-if="!lookupResult" class="page-size-control">
+                <span>Rows</span>
+                <select
+                  :value="store.pageSize"
+                  :disabled="store.loading"
+                  @change="store.setPageSize(Number(($event.target as HTMLSelectElement).value))"
+                >
+                  <option v-for="option in pageSizeOptions" :key="option" :value="option">
+                    {{ option }}
+                  </option>
+                </select>
+              </label>
+
+              <input
+                v-model="lookupId"
+                type="text"
+                placeholder="Enter asset ID"
+                :disabled="lookupLoading"
+                @keydown.enter.prevent="handleLookup"
+              />
+              <button
+                class="toolbar-btn toolbar-btn-primary"
+                :disabled="!lookupId.trim() || lookupLoading"
+                @click="handleLookup"
+              >
+                {{ lookupLoading ? 'Fetching...' : 'Fetch' }}
+              </button>
+              <button
+                v-if="lookupResult || lookupError || lookupId"
+                class="toolbar-btn toolbar-btn-secondary"
+                @click="clearLookup"
+              >
+                Clear
+              </button>
+            </div>
           </div>
-          <p class="description">{{ asset.description }}</p>
-          <div class="asset-actions">
-            <button
-              @click="asset.id && store.fetchAsset(asset.id)"
-              :disabled="!asset.id"
-              class="btn-view"
+
+          <p v-if="lookupError" class="lookup-error">{{ lookupError }}</p>
+
+          <div class="assets-grid">
+            <div
+              v-for="asset in displayedAssets"
+              :key="asset.id"
+              class="asset-card"
+              :class="{ active: store.selectedAsset?.id === asset.id }"
             >
-              View
+              <div class="asset-header">
+                <h4>{{ asset.name }}</h4>
+                <span class="price">${{ asset.price }}</span>
+              </div>
+              <p class="description">{{ asset.description }}</p>
+              <div class="asset-actions">
+                <button
+                  @click="asset.id && store.fetchAsset(asset.id)"
+                  :disabled="!asset.id"
+                  class="btn-view"
+                >
+                  View
+                </button>
+                <button
+                  @click="handleEdit(asset)"
+                  :disabled="!asset.id"
+                  class="btn-edit"
+                >
+                  Edit
+                </button>
+                <button
+                  @click="asset.id && store.toggleComparison(asset)"
+                  :disabled="!asset.id"
+                  :class="['btn-compare', { active: store.isInComparison(asset.id) }]"
+                >
+                  {{ store.isInComparison(asset.id) ? '✓ Compare' : 'Compare' }}
+                </button>
+                <button
+                  @click="handleDelete(asset)"
+                  :disabled="!asset.id"
+                  class="btn-delete"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="store.totalCount > 0 && !lookupResult" class="pagination">
+            <button
+              class="pagination-btn"
+              :disabled="store.loading || !store.currentPage || store.currentPage <= 1"
+              @click="store.goToPage(store.currentPage - 1)"
+            >
+              Previous
             </button>
+
+            <p class="pagination-meta">
+              Page {{ store.currentPage }} of {{ store.totalPages }}
+              <span class="dot">•</span>
+              {{ store.totalCount }} total assets
+            </p>
+
             <button
-              @click="handleEdit(asset)"
-              :disabled="!asset.id"
-              class="btn-edit"
+              class="pagination-btn"
+              :disabled="store.loading || !store.totalPages || store.currentPage >= store.totalPages"
+              @click="store.goToPage(store.currentPage + 1)"
             >
-              Edit
-            </button>
-            <button
-              @click="asset.id && store.toggleComparison(asset)"
-              :disabled="!asset.id"
-              :class="['btn-compare', { active: store.isInComparison(asset.id) }]"
-            >
-              {{ store.isInComparison(asset.id) ? '✓ Compare' : 'Compare' }}
-            </button>
-            <button
-              @click="handleDelete(asset)"
-              :disabled="!asset.id"
-              class="btn-delete"
-            >
-              Delete
+              Next
             </button>
           </div>
         </div>
-      </div>
 
-      <div v-if="store.totalCount > 0" class="pagination">
-        <button
-          class="pagination-btn"
-          :disabled="store.loading || !store.currentPage || store.currentPage <= 1"
-          @click="store.goToPage(store.currentPage - 1)"
-        >
-          Previous
-        </button>
-
-        <p class="pagination-meta">
-          Page {{ store.currentPage }} of {{ store.totalPages }}
-          <span class="dot">•</span>
-          {{ store.totalCount }} total assets
-        </p>
-
-        <button
-          class="pagination-btn"
-          :disabled="store.loading || !store.totalPages || store.currentPage >= store.totalPages"
-          @click="store.goToPage(store.currentPage + 1)"
-        >
-          Next
-        </button>
+        <div class="right-column">
+          <PriceDistributionDetail
+            :asset="store.selectedAsset"
+            @close="handleDetailClose"
+          />
+        </div>
       </div>
     </div>
     <div v-else class="empty-state">
@@ -151,13 +235,146 @@ h2 {
   flex-direction: column;
   gap: 1.5rem;
   flex: 1;
+  overflow: hidden;
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   overflow-y: auto;
+  min-height: 0;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(66, 184, 131, 0.18);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 250, 0.9) 100%);
+}
+
+.table-toolbar-copy h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+
+.table-toolbar-copy p {
+  margin: 0.35rem 0 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.lookup-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.page-size-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4b5563;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.page-size-control select {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: white;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.page-size-control select:focus,
+.lookup-inline input:focus {
+  outline: none;
+  border-color: #42b883;
+  box-shadow: 0 0 0 3px rgba(66, 184, 131, 0.12);
+}
+
+.lookup-inline input {
+  min-width: 240px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.toolbar-btn {
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.toolbar-btn-primary {
+  background: #42b883;
+  color: white;
+}
+
+.toolbar-btn-primary:hover:not(:disabled) {
+  background: #33a06f;
+}
+
+.toolbar-btn-secondary {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.toolbar-btn-secondary:hover {
+  border-color: #9ca3af;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lookup-error {
+  margin: -0.5rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.9rem;
 }
 
 /* Assets Grid */
 .assets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
   flex: 1;
   align-content: start;
@@ -339,6 +556,30 @@ h2 {
 .dot {
   margin: 0 0.4rem;
   color: #9ca3af;
+}
+
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lookup-inline {
+    justify-content: stretch;
+  }
+
+  .lookup-inline input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .assets-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
