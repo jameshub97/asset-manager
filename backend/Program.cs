@@ -26,17 +26,32 @@ builder.Services.AddScoped<AssetService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowViteDev", policy =>
+    var localDevOrigins = new[]
     {
-        policy.WithOrigins(
-                  "http://localhost:5173",
-                  "http://localhost:5174",
-                  "http://localhost:5175",
-                  "http://127.0.0.1:5173",
-                  "http://127.0.0.1:5174",
-                  "http://127.0.0.1:5175")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175"
+    };
+
+    var configuredOrigins = builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>() ?? Array.Empty<string>();
+
+    var allowedOrigins = localDevOrigins
+        .Concat(configuredOrigins)
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Select(origin => origin.TrimEnd('/'))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -98,7 +113,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("AllowViteDev");
+app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
