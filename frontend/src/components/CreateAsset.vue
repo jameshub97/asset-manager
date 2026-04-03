@@ -2,9 +2,11 @@
 import { useAssetStore } from '@/stores/assetstore'
 import { reactive } from 'vue'
 import { auth } from '@/services/auth'
+import { useToast } from 'vue-toastification'
 
 const store = useAssetStore()
 const isGuest = auth.isGuest()
+const toast = useToast()
 
 const newAsset = reactive({
   name: '',
@@ -14,7 +16,16 @@ const newAsset = reactive({
 
 const handleCreate = async () => {
   if (isGuest) return
-  await store.createAsset(newAsset)
+  try {
+    await store.createAsset(newAsset)
+    newAsset.name = ''
+    newAsset.description = ''
+    newAsset.price = 0
+    toast.success('Asset created successfully.')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to create asset.'
+    toast.error(message)
+  }
 }
 </script>
 
