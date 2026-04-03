@@ -49,6 +49,25 @@ namespace backend.Migrations
 
                     b.ToTable("Assets");
                 });
+
+            modelBuilder.Entity("backend.Models.Vendor", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Vendors");
+                });
 #pragma warning restore 612, 618
         }
     }

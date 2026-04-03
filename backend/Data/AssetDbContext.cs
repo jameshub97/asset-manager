@@ -10,6 +10,7 @@ public class AssetDbContext : DbContext
     }
 
     public DbSet<Asset> Assets => Set<Asset>();
+    public DbSet<Vendor> Vendors => Set<Vendor>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,6 +25,14 @@ public class AssetDbContext : DbContext
             entity.Property(a => a.CreatedAt).IsRequired(false);
             entity.Property(a => a.Price).HasPrecision(18, 2).IsRequired(false);
             entity.Property(a => a.UserId).IsRequired(false);
+        });
+
+        modelBuilder.Entity<Vendor>(entity =>
+        {
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.Id).ValueGeneratedOnAdd();
+            entity.Property(v => v.Name).IsRequired();
+            entity.Property(v => v.Email).IsRequired();
         });
     }
 }
