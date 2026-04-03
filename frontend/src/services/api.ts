@@ -22,6 +22,11 @@ export const api = {
       throw new Error(`API error: ${response.status}`)
     }
 
+    // Handle responses with no content (e.g., 204 No Content)
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return
+    }
+
     return response.json()
   },
 
