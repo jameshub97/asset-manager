@@ -1,15 +1,29 @@
 // backend/Services/AssetService.cs
 using backend.Data;
 using backend.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Services;
 
 public class AssetService
 {
-    public IEnumerable<Asset> GetAllAssets() => AssetStore.GetAll();
-    
-    public Asset? GetAsset(string id) => AssetStore.GetById(id);
-    
+    private readonly AssetDbContext _db;
+
+    public AssetService(AssetDbContext db)
+    {
+        _db = db;
+    }
+
+    public IEnumerable<Asset> GetAllAssets()
+    {
+        return _db.Assets.AsNoTracking().ToList();
+    }
+
+    public Asset? GetAsset(string id)
+    {
+        return _db.Assets.AsNoTracking().FirstOrDefault(a => a.Id == id);
+    }
+
     public Asset CreateAsset(CreateAssetRequest request)
     {
         var asset = new Asset
@@ -18,13 +32,38 @@ public class AssetService
             Name = request.Name,
             Description = request.Description,
             Price = request.Price,
-            CreatedAt = DateTime.UtcNow.ToString("o")
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UserId = string.Empty
         };
-        AssetStore.Add(asset);
+
+        _db.Assets.Add(asset);
+        _db.SaveChanges();
+
         return asset;
     }
-    
-    public bool UpdateAsset(string id, UpdateAssetRequest request) => AssetStore.Update(id, request);
-    
-    public bool DeleteAsset(string id) => AssetStore.Remove(id);
+
+    public bool UpdateAsset(string id, UpdateAssetRequest request)
+    {
+        var asset = _db.Assets.FirstOrDefault(a => a.Id == id);
+        if (asset is null) return false;
+
+        if (request.Name is not null) asset.Name = request.Name;
+        if (request.Description is not null) asset.Description = request.Description;
+        if (request.Price.HasValue) asset.Price = request.Price;
+
+        _db.SaveChanges();
+
+        return true;
+    }
+
+    public bool DeleteAsset(string id)
+    {
+        var asset = _db.Assets.FirstOrDefault(a => a.Id == id);
+        if (asset is null) return false;
+
+        _db.Assets.Remove(asset);
+        _db.SaveChanges();
+
+        return true;
+    }
 }

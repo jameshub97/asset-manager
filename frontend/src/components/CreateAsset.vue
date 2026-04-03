@@ -12,51 +12,65 @@ const newAsset = reactive({
 </script>
 
 <template>
-  <div class="greetings">
-    <h1 class="green">Asset Manager</h1>
-
+  <div class="create-asset">
     <h2 class="green">Create an asset</h2>
-    <h3>
-      <div class="button-group">
-        <form @submit.prevent="store.createAsset(newAsset)">
-          <input v-model="newAsset.name" placeholder="Name" />
-          <input v-model="newAsset.description" placeholder="Description" />
-          <input v-model.number="newAsset.price" type="number" placeholder="Price" />
-          <button type="submit">Create Asset</button>
-        </form>
-      </div>
-    </h3>
+    <form @submit.prevent="store.createAsset(newAsset)">
+      <input v-model="newAsset.name" placeholder="Name" />
+      <input v-model="newAsset.description" placeholder="Description" />
+      <input v-model.number="newAsset.price" type="number" placeholder="Price" />
+      <button type="submit">Create Asset</button>
+    </form>
   </div>
 </template>
 
 <style scoped>
-h1 {
-  font-weight: 500;
-  font-size: 2.6rem;
-  position: relative;
-  top: -10px;
-}
-
-h3 {
-  font-size: 1.2rem;
-}
-
-.greetings h1,
-.greetings h3 {
-  text-align: center;
-}
-
-.button-group {
+.create-asset {
   display: flex;
-  flex-direction: column; /* Stack vertically */
-  gap: 8px; /* Space between buttons */
-  align-items: flex-start; /* Align left (or center/stretch) */
+  flex-direction: column;
+  gap: 1rem;
 }
 
-@media (min-width: 1024px) {
-  .greetings h1,
-  .greetings h3 {
-    text-align: left;
-  }
+h2 {
+  margin: 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+input {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #42b883;
+  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
+}
+
+button {
+  padding: 8px 16px;
+  background: #42b883;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #33a06f;
+}
+
+button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
 }
 </style>

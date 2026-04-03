@@ -30,33 +30,43 @@ onMounted(() => {
 </template>
 
 <style scoped>
-h1 {
-  font-weight: 500;
-  font-size: 2.6rem;
-  position: relative;
-  top: -10px;
-}
-
-h3 {
-  font-size: 1.2rem;
-}
-
-.greetings h1,
-.greetings h3 {
-  text-align: center;
-}
-
 .button-group {
   display: flex;
-  flex-direction: column; /* Stack vertically */
-  gap: 8px; /* Space between buttons */
-  align-items: flex-start; /* Align left (or center/stretch) */
+  flex-direction: column;
+  gap: 1rem;
 }
 
-@media (min-width: 1024px) {
-  .greetings h1,
-  .greetings h3 {
-    text-align: left;
+h2 {
+  margin: 0;
+}
+
+.asset-select {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.asset-select:hover {
+  border-color: #42b883;
+}
+
+.asset-select:focus {
+  outline: none;
+  border-color: #42b883;
+  box-shadow: 0 0 0 3px rgba(66, 184, 131, 0.1);
+}
+
+.green {
+  color: #42b883;
+}
+
+@media (max-width: 768px) {
+  .button-group {
+    gap: 0.75rem;
   }
 }
 </style>

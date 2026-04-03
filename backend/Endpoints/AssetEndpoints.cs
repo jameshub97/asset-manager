@@ -8,7 +8,7 @@ public static class AssetEndpoints
 {
     public static void MapAssetEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/assets");
+        var group = app.MapGroup("/api/assets").RequireAuthorization();
         
         // GET all
         group.MapGet("/", (AssetService service) => 

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5001/api' // Change from 5171 to 5001
+export const API_BASE = 'http://localhost:5001/api' // Change from 5171 to 5001
 
 export interface Asset {
   id?: string
@@ -10,15 +10,25 @@ export interface Asset {
 
 export const api = {
   async request(endpoint: string, options?: RequestInit) {
+    const token = localStorage.getItem('authToken')
+    const headers = new Headers(options?.headers)
+    headers.set('Content-Type', 'application/json')
+
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`)
+    }
+
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
     })
 
     if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('username')
+        throw new Error('Unauthorized. Please log in again.')
+      }
       throw new Error(`API error: ${response.status}`)
     }
 

@@ -1,68 +1,274 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
+import UpdateAsset from './UpdateAsset.vue'
+import AssetDetail from './AssetDetail.vue'
+import CompareAssets from './CompareAssets.vue'
+import type { Asset } from '@/services/api'
 
 const store = useAssetStore()
+const editingAsset = ref<Asset | null>(null)
 
 onMounted(() => {
   store.fetchAssets()
 })
+
+const handleEdit = (asset: Asset) => {
+  editingAsset.value = asset
+}
+
+const handleUpdateClose = () => {
+  editingAsset.value = null
+}
+
+const handleDetailClose = () => {
+  store.selectedAsset = null
+}
 </script>
 
 <template>
-  <div class="button-group">
-      <h2 class="green">Asset List</h2>
-    <div v-if="store.assets.length">
-      <div v-if="store.selectedAsset">
-        <h2>{{ store.selectedAsset.name }}</h2>
-        <p>{{ store.selectedAsset.description }}</p>
-        <p>Price: ${{ store.selectedAsset.price }}</p>
-        <p>ID: {{ store.selectedAsset.id }}</p>
+  <div class="asset-list-container">
+    <h2 class="green">Asset List</h2>
+
+    <div v-if="store.assets.length" class="list-content">
+      <!-- Asset Detail Section -->
+      <AssetDetail
+        :asset="store.selectedAsset"
+        @close="handleDetailClose"
+      />
+
+      <!-- Compare Section -->
+      <CompareAssets />
+      <div class="assets-grid">
+        <div
+          v-for="asset in store.assets"
+          :key="asset.id"
+          class="asset-card"
+          :class="{ active: store.selectedAsset?.id === asset.id }"
+        >
+          <div class="asset-header">
+            <h4>{{ asset.name }}</h4>
+            <span class="price">${{ asset.price }}</span>
+          </div>
+          <p class="description">{{ asset.description }}</p>
+          <div class="asset-actions">
+            <button
+              @click="asset.id && store.fetchAsset(asset.id)"
+              :disabled="!asset.id"
+              class="btn-view"
+            >
+              View
+            </button>
+            <button
+              @click="handleEdit(asset)"
+              :disabled="!asset.id"
+              class="btn-edit"
+            >
+              Edit
+            </button>
+            <button
+              @click="asset.id && store.toggleComparison(asset)"
+              :disabled="!asset.id"
+              :class="['btn-compare', { active: store.isInComparison(asset.id) }]"
+            >
+              {{ store.isInComparison(asset.id) ? '✓ Compare' : 'Compare' }}
+            </button>
+            <button
+              @click="asset.id && store.deleteAsset(asset.id)"
+              :disabled="!asset.id"
+              class="btn-delete"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
       </div>
-      <ul>
-        <li v-for="asset in store.assets" :key="asset.id">
-          {{ asset.name }} - ${{ asset.price }}
-          <button @click="asset.id && store.fetchAsset(asset.id)" :disabled="!asset.id">
-            View
-          </button>
-          <button @click="asset.id && store.deleteAsset(asset.id)" :disabled="!asset.id">
-            Delete
-          </button>
-        </li>
-      </ul>
     </div>
-    <p v-else>No assets loaded</p>
+    <div v-else class="empty-state">
+      <p>📭 No assets loaded</p>
+    </div>
+
+    <!-- Update Asset Modal -->
+    <UpdateAsset
+      v-if="editingAsset"
+      :asset="editingAsset"
+      @close="handleUpdateClose"
+    />
   </div>
 </template>
 
 <style scoped>
-h1 {
+.asset-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Assets Grid */
+.assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  flex: 1;
+  align-content: start;
+}
+
+.asset-card {
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(66, 184, 131, 0.08) 0%, rgba(51, 160, 111, 0.03) 100%);
+  border: 1px solid rgba(66, 184, 131, 0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.asset-card:hover {
+  border-color: rgba(66, 184, 131, 0.4);
+  box-shadow: 0 4px 12px rgba(66, 184, 131, 0.1);
+  transform: translateY(-2px);
+}
+
+.asset-card.active {
+  border-color: #42b883;
+  background: linear-gradient(135deg, rgba(66, 184, 131, 0.15) 0%, rgba(51, 160, 111, 0.08) 100%);
+  box-shadow: 0 4px 12px rgba(66, 184, 131, 0.2);
+}
+
+.asset-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.asset-header h4 {
+  margin: 0;
+  flex: 1;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.price {
+  background: #42b883;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.asset-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn-view,
+.btn-edit,
+.btn-compare,
+.btn-delete {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.825rem;
   font-weight: 500;
-  font-size: 2.6rem;
-  position: relative;
-  top: -10px;
+  transition: all 0.2s;
 }
 
-h3 {
-  font-size: 1.2rem;
+.btn-view {
+  background: #42b883;
+  color: white;
 }
 
-.greetings h1,
-.greetings h3 {
+.btn-view:hover:not(:disabled) {
+  background: #33a06f;
+}
+
+.btn-edit {
+  background: #dbeafe;
+  color: #0369a1;
+}
+
+.btn-edit:hover:not(:disabled) {
+  background: #bfdbfe;
+}
+
+.btn-compare {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.btn-compare:hover:not(:disabled) {
+  background: #ede9fe;
+}
+
+.btn-compare.active {
+  background: #7c3aed;
+  color: white;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.btn-view:disabled,
+.btn-edit:disabled,
+.btn-compare:disabled,
+.btn-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #9ca3af;
+  font-size: 1.125rem;
   text-align: center;
 }
 
-.button-group {
-  display: flex;
-  flex-direction: column; /* Stack vertically */
-  gap: 8px; /* Space between buttons */
-  align-items: flex-start; /* Align left (or center/stretch) */
-}
+@media (max-width: 768px) {
+  .assets-grid {
+    grid-template-columns: 1fr;
+  }
 
-@media (min-width: 1024px) {
-  .greetings h1,
-  .greetings h3 {
-    text-align: left;
+  .asset-card {
+    padding: 1rem;
   }
 }
 </style>

@@ -7,6 +7,7 @@ export const useAssetStore = defineStore('assets', {
     loading: false as boolean,
     error: null as string | null,
     selectedAsset: null as Asset | null,
+    comparisonAssets: [] as Asset[],
   }),
 
   getters: {
@@ -15,6 +16,10 @@ export const useAssetStore = defineStore('assets', {
     },
     assetCount: (state) => state.assets.length,
     isLoading: (state) => state.loading,
+    isInComparison: (state) => (id: string | undefined) => {
+      if (!id) return false
+      return state.comparisonAssets.some((a) => a.id === id)
+    },
   },
 
   actions: {
@@ -124,6 +129,22 @@ export const useAssetStore = defineStore('assets', {
       } finally {
         this.loading = false
       }
+    },
+
+    toggleComparison(asset: Asset) {
+      if (!asset.id) return
+      const index = this.comparisonAssets.findIndex((a) => a.id === asset.id)
+      if (index !== -1) {
+        this.comparisonAssets.splice(index, 1)
+      } else {
+        if (this.comparisonAssets.length < 5) {
+          this.comparisonAssets.push(asset)
+        }
+      }
+    },
+
+    clearComparison() {
+      this.comparisonAssets = []
     },
 
     clearError() {

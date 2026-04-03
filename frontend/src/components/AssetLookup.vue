@@ -1,7 +1,8 @@
 <!-- components/AssetLookup.vue -->
 <template>
-  <h2 class="green">Lookup an asset</h2>
   <div class="asset-lookup">
+      <h2 class="green">Lookup an asset</h2>
+
     <div class="lookup-control">
       <input
         v-model="searchId"
@@ -81,19 +82,37 @@ defineExpose({
 
 <style scoped>
 .asset-lookup {
-  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+h2 {
+  margin: 0;
+}
+
+.green {
+  color: #42b883;
 }
 
 .lookup-control {
   display: flex;
-  gap: 8px;
+  gap: 0.75rem;
 }
 
 .lookup-control input {
   flex: 1;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.lookup-control input:focus {
+  outline: none;
+  border-color: #42b883;
+  box-shadow: 0 0 0 3px rgba(66, 184, 131, 0.1);
 }
 
 .lookup-control input.is-loading {
@@ -101,25 +120,44 @@ defineExpose({
 }
 
 .lookup-control button {
-  padding: 8px 16px;
+  padding: 10px 20px;
   background: #42b883;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.lookup-control button:hover:not(:disabled) {
+  background: #33a06f;
 }
 
 .lookup-control button:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .error-message {
-  margin-top: 8px;
-  padding: 8px;
+  padding: 10px 12px;
   background: #fee2e2;
   color: #dc2626;
-  border-radius: 4px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
   font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .lookup-control {
+    gap: 0.5rem;
+  }
+
+  .lookup-control button {
+    padding: 10px 16px;
+  }
 }
 </style>
