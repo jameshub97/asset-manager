@@ -9,7 +9,7 @@ export const useAssetStore = defineStore('assets', {
     selectedAsset: null as Asset | null,
     comparisonAssets: [] as Asset[],
     currentPage: 1 as number,
-    pageSize: 8 as number,
+    pageSize: 4 as number,
     totalCount: 0 as number,
     totalPages: 1 as number,
   }),

@@ -13,10 +13,45 @@ const lookupLoading = ref(false)
 const lookupError = ref('')
 const lookupResult = ref<Asset | null>(null)
 const toast = useToast()
-const pageSizeOptions = [8, 12, 24, 48]
+const pageSizeOptions = [4, 8, 12, 24, 48]
 
 const displayedAssets = computed(() => {
   return lookupResult.value ? [lookupResult.value] : store.assets
+})
+
+const assetGridKey = computed(() => {
+  return `${lookupResult.value?.id ?? 'all'}-${store.currentPage}-${store.pageSize}-${displayedAssets.value.length}`
+})
+
+const assetGridStyle = computed(() => {
+  if (lookupResult.value) {
+    return {
+      gridTemplateColumns: 'minmax(320px, 1fr)',
+    }
+  }
+
+  if (store.pageSize <= 4) {
+    return {
+      gridTemplateColumns: 'repeat(2, minmax(320px, 1fr))',
+    }
+  }
+
+  if (store.pageSize <= 8) {
+    return {
+      gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    }
+  }
+
+  return {
+    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+  }
+})
+
+const assetCardClass = computed(() => {
+  if (lookupResult.value) return 'asset-card-lookup'
+  if (store.pageSize <= 4) return 'asset-card-large'
+  if (store.pageSize <= 8) return 'asset-card-medium'
+  return 'asset-card-compact'
 })
 
 onMounted(() => {
@@ -59,6 +94,15 @@ const handleLookup = async () => {
   }
 }
 
+const handlePageSizeChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement | null
+  const value = Number(target?.value ?? store.pageSize)
+
+  if (!Number.isFinite(value)) return
+
+  await store.setPageSize(value)
+}
+
 const handleDelete = async (asset: Asset) => {
   if (!asset.id) return
 
@@ -87,12 +131,12 @@ const handleDelete = async (asset: Asset) => {
             </div>
 
             <div class="lookup-inline">
-              <label v-if="!lookupResult" class="page-size-control">
-                <span>Rows</span>
+              <label class="page-size-control">
+                <span>Items per page</span>
                 <select
                   :value="store.pageSize"
-                  :disabled="store.loading"
-                  @change="store.setPageSize(Number(($event.target as HTMLSelectElement).value))"
+                  :disabled="store.loading || Boolean(lookupResult)"
+                  @change="handlePageSizeChange"
                 >
                   <option v-for="option in pageSizeOptions" :key="option" :value="option">
                     {{ option }}
@@ -126,12 +170,12 @@ const handleDelete = async (asset: Asset) => {
 
           <p v-if="lookupError" class="lookup-error">{{ lookupError }}</p>
 
-          <div class="assets-grid">
+          <div :key="assetGridKey" class="assets-grid" :style="assetGridStyle">
             <div
               v-for="asset in displayedAssets"
               :key="asset.id"
               class="asset-card"
-              :class="{ active: store.selectedAsset?.id === asset.id }"
+              :class="[assetCardClass, { active: store.selectedAsset?.id === asset.id }]"
             >
               <div class="asset-header">
                 <h4>{{ asset.name }}</h4>
@@ -182,6 +226,8 @@ const handleDelete = async (asset: Asset) => {
 
             <p class="pagination-meta">
               Page {{ store.currentPage }} of {{ store.totalPages }}
+              <span class="dot">•</span>
+              {{ store.pageSize }} per page
               <span class="dot">•</span>
               {{ store.totalCount }} total assets
             </p>
@@ -374,7 +420,6 @@ h2 {
 /* Assets Grid */
 .assets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
   flex: 1;
   align-content: start;
@@ -390,6 +435,20 @@ h2 {
   gap: 0.75rem;
   transition: all 0.2s;
   cursor: pointer;
+}
+
+.asset-card-large,
+.asset-card-lookup {
+  min-height: 240px;
+  padding: 1.5rem;
+}
+
+.asset-card-medium {
+  min-height: 210px;
+}
+
+.asset-card-compact {
+  min-height: 180px;
 }
 
 .asset-card:hover {
@@ -578,13 +637,13 @@ h2 {
   }
 
   .assets-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
   }
 }
 
 @media (max-width: 768px) {
   .assets-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 
   .asset-card {

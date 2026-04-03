@@ -1,9 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useAssetStore } from '@/stores/assetstore'
 import type { Asset } from '@/services/api'
+import { Line } from 'vue-chartjs'
+import {
+	CategoryScale,
+	Chart as ChartJS,
+	type ChartData,
+	type ChartOptions,
+	Filler,
+	Legend,
+	LineElement,
+	LinearScale,
+	PointElement,
+	type TooltipItem,
+	Tooltip,
+} from 'chart.js'
 
-defineProps<{
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
+
+const props = defineProps<{
 	asset: Asset | null
 }>()
 
@@ -12,6 +28,24 @@ const emit = defineEmits<{
 }>()
 
 const store = useAssetStore()
+const chartView = ref<'bars' | 'line'>('bars')
+
+watch(
+	() => props.asset,
+	(currentAsset) => {
+		if (!currentAsset?.id) {
+			if (store.comparisonAssets.length === 1) {
+				store.clearComparison()
+			}
+			return
+		}
+
+		if (store.comparisonAssets.length < 2) {
+			store.comparisonAssets = [currentAsset]
+		}
+	},
+	{ immediate: true },
+)
 
 const allAssets = computed(() => store.assets)
 
@@ -55,9 +89,127 @@ const comparisonStats = computed(() => {
 	}
 })
 
+const comparisonRange = computed(() => {
+	return Math.max(comparisonStats.value.max - comparisonStats.value.min, 1)
+})
+
+const variationSeries = computed(() => {
+	const average = comparisonStats.value.average
+	const deltas = store.comparisonAssets.map((item) => ({
+		id: item.id,
+		name: item.name,
+		price: item.price || 0,
+		delta: (item.price || 0) - average,
+	}))
+	const maxDelta = Math.max(...deltas.map((item) => Math.abs(item.delta)), 1)
+
+	return deltas.map((item) => ({
+		...item,
+		width: `${Math.max((Math.abs(item.delta) / maxDelta) * 100, item.delta === 0 ? 0 : 10)}%`,
+		isPositive: item.delta > 0,
+		isNeutral: item.delta === 0,
+	}))
+})
+
+const comparisonLineData = computed<ChartData<'line'>>(() => {
+	return {
+		labels: store.comparisonAssets.map((item) => item.name),
+		datasets: [
+			{
+				label: 'Price',
+				data: store.comparisonAssets.map((item) => item.price || 0),
+				borderColor: '#0f766e',
+				backgroundColor: 'rgba(15, 118, 110, 0.18)',
+				pointBackgroundColor: store.comparisonAssets.map((item) => isFreeAsset(item.price) ? '#94a3b8' : '#42b883'),
+				pointBorderColor: '#ffffff',
+				pointBorderWidth: 2,
+				pointRadius: 5,
+				tension: 0.35,
+				fill: true,
+			},
+		],
+	}
+})
+
+const comparisonLineOptions = computed<ChartOptions<'line'>>(() => {
+	return {
+		responsive: true,
+		maintainAspectRatio: false,
+		plugins: {
+			legend: {
+				display: false,
+			},
+			tooltip: {
+				callbacks: {
+					label: (context: TooltipItem<'line'>) => {
+						const numericValue = typeof context.raw === 'number' ? context.raw : Number(context.raw ?? 0)
+						return numericValue <= 0 ? 'Free' : formatPrice(numericValue)
+					},
+				},
+			},
+		},
+		scales: {
+			x: {
+				grid: {
+					display: false,
+				},
+				ticks: {
+					color: '#475569',
+					maxRotation: 0,
+					autoSkip: false,
+				},
+			},
+			y: {
+				beginAtZero: true,
+				grace: '8%',
+				ticks: {
+					color: '#475569',
+					callback: (value: string | number) => {
+						const numericValue = typeof value === 'number' ? value : Number(value)
+						return numericValue <= 0 ? 'Free' : formatPrice(numericValue)
+					},
+				},
+				grid: {
+					color: 'rgba(148, 163, 184, 0.2)',
+				},
+			},
+		},
+	}
+})
+
+const stagedComparisonAsset = computed(() => {
+	return store.comparisonAssets[0] ?? props.asset
+})
+
 const getPricePosition = (price?: number) => {
 	if (!price) return 0
 	return ((price - stats.value.min) / priceRange.value) * 100
+}
+
+const getComparisonWidth = (price?: number) => {
+	if (!price) return 0
+
+	if (store.comparisonAssets.length <= 1) {
+		return 100
+	}
+
+	if (comparisonStats.value.max === comparisonStats.value.min) {
+		return 100
+	}
+
+	const normalized = ((price - comparisonStats.value.min) / comparisonRange.value) * 100
+	return Math.max(normalized, 14)
+}
+
+const getComparisonDelta = (price?: number) => {
+	if (!price) return '$0.00'
+
+	const delta = price - comparisonStats.value.min
+	return delta <= 0 ? 'Baseline' : `+${formatPrice(delta)}`
+}
+
+const isFreeAsset = (price?: number) => {
+	return !price || price <= 0
 }
 
 const getPricePercentile = (price?: number) => {
@@ -83,6 +235,11 @@ const formatDate = (dateStr?: string) => {
 const formatPrice = (value?: number) => {
 	return `$${(value || 0).toFixed(2)}`
 }
+
+const formatDelta = (value: number) => {
+	if (value === 0) return 'At average'
+	return `${value > 0 ? '+' : '-'}${formatPrice(Math.abs(value))}`
+}
 </script>
 
 <template>
@@ -92,26 +249,54 @@ const formatPrice = (value?: number) => {
 				<h3>Price Comparison</h3>
 				<p>Compare selected assets against each other.</p>
 			</div>
-			<button class="clear-btn" @click="store.clearComparison()">Clear</button>
+			<div class="chart-actions">
+				<div class="chart-toggle" role="tablist" aria-label="Comparison chart view">
+					<button
+						type="button"
+						class="chart-toggle-btn"
+						:class="{ active: chartView === 'bars' }"
+						@click="chartView = 'bars'"
+					>
+						Bars
+					</button>
+					<button
+						type="button"
+						class="chart-toggle-btn"
+						:class="{ active: chartView === 'line' }"
+						@click="chartView = 'line'"
+					>
+						Line
+					</button>
+				</div>
+				<button class="clear-btn" @click="store.clearComparison()">Clear</button>
+			</div>
 		</div>
 
-		<div class="comparison-bars">
+		<div v-if="chartView === 'bars'" class="comparison-bars">
 			<div v-for="compareAsset in store.comparisonAssets" :key="compareAsset.id" class="comparison-row">
 				<div class="comparison-meta">
-					<strong>{{ compareAsset.name }}</strong>
-					<span>{{ formatPrice(compareAsset.price) }}</span>
+					<div class="comparison-meta-copy">
+						<strong>{{ compareAsset.name }}</strong>
+						<small>{{ isFreeAsset(compareAsset.price) ? 'Free' : getComparisonDelta(compareAsset.price) }}</small>
+					</div>
+					<span>{{ isFreeAsset(compareAsset.price) ? 'Free' : formatPrice(compareAsset.price) }}</span>
 				</div>
-				<div class="comparison-track">
+				<div v-if="!isFreeAsset(compareAsset.price)" class="comparison-track">
 					<div
 						class="comparison-fill"
 						:class="{
 							low: (compareAsset.price || 0) === comparisonStats.min,
 							high: (compareAsset.price || 0) === comparisonStats.max,
 						}"
-						:style="{ width: `${getPricePosition(compareAsset.price)}%` }"
+						:style="{ width: `${getComparisonWidth(compareAsset.price)}%` }"
 					></div>
 				</div>
+				<p v-else class="free-note">Free item, no price bar shown.</p>
 			</div>
+		</div>
+
+		<div v-else class="line-chart-panel">
+			<Line :data="comparisonLineData" :options="comparisonLineOptions" />
 		</div>
 
 		<div class="stats-grid">
@@ -128,44 +313,75 @@ const formatPrice = (value?: number) => {
 				<strong>{{ formatPrice(comparisonStats.max) }}</strong>
 			</div>
 		</div>
+
+		<div class="variation-panel">
+			<div class="variation-header">
+				<strong>Price Variation</strong>
+				<span>Difference from comparison average {{ formatPrice(comparisonStats.average) }}</span>
+			</div>
+
+			<div class="variation-list">
+				<div v-for="item in variationSeries" :key="item.id" class="variation-row">
+					<div class="variation-meta">
+						<span>{{ item.name }}</span>
+						<small>{{ formatDelta(item.delta) }}</small>
+					</div>
+
+					<div class="variation-track">
+						<div
+							v-if="!item.isNeutral"
+							class="variation-fill"
+							:class="{ positive: item.isPositive, negative: !item.isPositive }"
+							:style="{ width: item.width }"
+						></div>
+						<div v-else class="variation-neutral">Average</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 
-	<div v-else-if="asset" class="selected-asset">
+	<div v-else-if="stagedComparisonAsset" class="selected-asset">
 		<div class="panel-header">
 			<div>
-				<h3>{{ asset.name }}</h3>
-				<p>Selected asset details and market position.</p>
+				<h3>{{ stagedComparisonAsset.name }}</h3>
+				<p>Comparison starter selected. Choose one more asset to compare.</p>
 			</div>
 			<button @click="emit('close')" class="close-btn">✕</button>
+		</div>
+
+		<div class="comparison-prompt">
+			<span class="comparison-prompt-badge">1 selected</span>
+			<p>Select another asset with the Compare button to open the chart.</p>
 		</div>
 
 		<div class="asset-detail-body">
 			<div class="detail-row">
 				<span class="label">Description</span>
-				<span class="value">{{ asset.description }}</span>
+				<span class="value">{{ stagedComparisonAsset.description }}</span>
 			</div>
 			<div class="detail-row">
 				<span class="label">Price</span>
-				<span class="value strong">{{ formatPrice(asset.price) }}</span>
+				<span class="value strong">{{ formatPrice(stagedComparisonAsset.price) }}</span>
 			</div>
 			<div class="detail-row">
 				<span class="label">ID</span>
-				<span class="value mono">{{ asset.id }}</span>
+				<span class="value mono">{{ stagedComparisonAsset.id }}</span>
 			</div>
 			<div class="detail-row">
 				<span class="label">Created</span>
-				<span class="value">{{ formatDate(asset.createdAt) }}</span>
+				<span class="value">{{ formatDate(stagedComparisonAsset.createdAt) }}</span>
 			</div>
 		</div>
 
 		<div class="distribution-card">
 			<div class="distribution-copy">
 				<strong>Price Distribution</strong>
-				<span>{{ getPricePercentile(asset.price) }}th percentile</span>
+				<span>{{ getPricePercentile(stagedComparisonAsset.price) }}th percentile</span>
 			</div>
 			<div class="distribution-track">
-				<div class="distribution-fill" :style="{ width: `${getPricePosition(asset.price)}%` }"></div>
-				<div class="distribution-marker" :style="{ left: `${getPricePosition(asset.price)}%` }"></div>
+				<div class="distribution-fill" :style="{ width: `${getPricePosition(stagedComparisonAsset.price)}%` }"></div>
+				<div class="distribution-marker" :style="{ left: `${getPricePosition(stagedComparisonAsset.price)}%` }"></div>
 			</div>
 			<div class="distribution-scale">
 				<span>{{ formatPrice(stats.min) }}</span>
@@ -243,10 +459,68 @@ const formatPrice = (value?: number) => {
 	color: #b91c1c;
 }
 
+.chart-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.chart-toggle {
+	display: inline-flex;
+	padding: 0.2rem;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.9);
+	border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.chart-toggle-btn {
+	border: none;
+	background: transparent;
+	color: #475569;
+	padding: 0.45rem 0.8rem;
+	border-radius: 10px;
+	cursor: pointer;
+	font-size: 0.85rem;
+	font-weight: 700;
+}
+
+.chart-toggle-btn.active {
+	background: #42b883;
+	color: white;
+}
+
 .asset-detail-body {
 	display: flex;
 	flex-direction: column;
 	gap: 0.75rem;
+}
+
+.comparison-prompt {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.85rem 1rem;
+	margin-bottom: 1rem;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.78);
+	border: 1px solid rgba(66, 184, 131, 0.16);
+}
+
+.comparison-prompt p {
+	margin: 0;
+	color: #4b5563;
+	font-size: 0.9rem;
+}
+
+.comparison-prompt-badge {
+	padding: 0.3rem 0.6rem;
+	border-radius: 999px;
+	background: #dcfce7;
+	color: #166534;
+	font-size: 0.78rem;
+	font-weight: 700;
+	white-space: nowrap;
 }
 
 .detail-row {
@@ -332,6 +606,13 @@ const formatPrice = (value?: number) => {
 	gap: 1rem;
 }
 
+.line-chart-panel {
+	height: 260px;
+	padding: 0.75rem 0.5rem 0.25rem;
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.78);
+}
+
 .comparison-row {
 	display: flex;
 	flex-direction: column;
@@ -343,6 +624,25 @@ const formatPrice = (value?: number) => {
 	justify-content: space-between;
 	gap: 1rem;
 	color: #1f2937;
+}
+
+.comparison-meta-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+}
+
+.comparison-meta-copy small {
+	color: #6b7280;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+
+.free-note {
+	margin: 0;
+	color: #166534;
+	font-size: 0.85rem;
+	font-weight: 600;
 }
 
 .comparison-fill.low {
@@ -358,6 +658,86 @@ const formatPrice = (value?: number) => {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 0.75rem;
+}
+
+.variation-panel {
+	margin-top: 1rem;
+	padding: 1rem;
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.82);
+}
+
+.variation-header {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 0.85rem;
+	color: #1f2937;
+}
+
+.variation-header strong {
+	font-size: 0.98rem;
+}
+
+.variation-header span {
+	font-size: 0.82rem;
+	color: #6b7280;
+	text-align: right;
+}
+
+.variation-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.8rem;
+}
+
+.variation-row {
+	display: grid;
+	grid-template-columns: minmax(140px, 180px) 1fr;
+	gap: 0.9rem;
+	align-items: center;
+}
+
+.variation-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+	color: #1f2937;
+}
+
+.variation-meta small {
+	color: #6b7280;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+
+.variation-track {
+	min-height: 12px;
+	display: flex;
+	align-items: center;
+	background: rgba(226, 232, 240, 0.75);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.variation-fill {
+	height: 12px;
+	border-radius: 999px;
+}
+
+.variation-fill.positive {
+	background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%);
+}
+
+.variation-fill.negative {
+	background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%);
+}
+
+.variation-neutral {
+	padding-left: 0.6rem;
+	font-size: 0.76rem;
+	font-weight: 700;
+	color: #475569;
 }
 
 .stat-box {
@@ -383,14 +763,24 @@ const formatPrice = (value?: number) => {
 
 @media (max-width: 768px) {
 	.panel-header,
+	.comparison-prompt,
 	.distribution-copy,
 	.comparison-meta,
+	.variation-header,
 	.detail-row {
 		flex-direction: column;
 		align-items: stretch;
 	}
 
+	.chart-actions {
+		align-items: stretch;
+	}
+
 	.stats-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.variation-row {
 		grid-template-columns: 1fr;
 	}
 }
