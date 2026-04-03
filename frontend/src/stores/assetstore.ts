@@ -60,8 +60,9 @@ export const useAssetStore = defineStore('assets', {
       this.loading = true
       this.error = null
       try {
-        this.selectedAsset = await api.getAsset(id)
-        return this.selectedAsset
+        const asset = await api.getAsset(id)
+        this.setSelectedAsset(asset)
+        return asset
       } catch (err: unknown) {
         this.error = err instanceof Error ? err.message : `Failed to fetch asset ${id}`
         throw err
@@ -70,7 +71,7 @@ export const useAssetStore = defineStore('assets', {
       }
     },
 
-    async createAsset(assetData: Omit<Asset, 'id' | 'createdAt'>) {
+    async createAsset(assetData: Pick<Asset, 'name' | 'description' | 'price'>) {
       // ✅ Validation before API call
       if (!assetData.name?.trim()) {
         this.error = 'Name is required'
@@ -113,8 +114,9 @@ export const useAssetStore = defineStore('assets', {
           this.assets[index] = updatedAsset
         }
         if (this.selectedAsset?.id === id) {
-          this.selectedAsset = updatedAsset
+          this.setSelectedAsset(updatedAsset)
         }
+        this.replaceComparisonAsset(updatedAsset)
         return updatedAsset
       } catch (err: unknown) {
         this.error = err instanceof Error ? err.message : 'Failed to update asset'
@@ -133,8 +135,10 @@ export const useAssetStore = defineStore('assets', {
 
         // ✅ Clear selected if it was deleted
         if (this.selectedAsset?.id === id) {
-          this.selectedAsset = null
+          this.clearSelectedAsset()
         }
+
+        this.removeComparisonAsset(id)
 
         const nextPage = this.assets.length === 1 && this.currentPage > 1
           ? this.currentPage - 1
@@ -165,6 +169,43 @@ export const useAssetStore = defineStore('assets', {
 
     clearComparison() {
       this.comparisonAssets = []
+    },
+
+    setSelectedAsset(asset: Asset | null) {
+      this.selectedAsset = asset
+    },
+
+    clearSelectedAsset() {
+      this.setSelectedAsset(null)
+    },
+
+    syncComparisonSelection(asset: Asset | null) {
+      if (!asset?.id) {
+        if (this.comparisonAssets.length === 1) {
+          this.clearComparison()
+        }
+        return
+      }
+
+      if (this.comparisonAssets.length >= 2) {
+        return
+      }
+
+      this.comparisonAssets = [asset]
+    },
+
+    replaceComparisonAsset(asset: Asset) {
+      const index = this.comparisonAssets.findIndex((item) => item.id === asset.id)
+      if (index !== -1) {
+        this.comparisonAssets.splice(index, 1, asset)
+      }
+    },
+
+    removeComparisonAsset(id: string) {
+      const index = this.comparisonAssets.findIndex((item) => item.id === id)
+      if (index !== -1) {
+        this.comparisonAssets.splice(index, 1)
+      }
     },
 
     async goToPage(page: number) {

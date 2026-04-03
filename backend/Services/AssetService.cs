@@ -5,6 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Services;
 
+public enum AssetMutationResult
+{
+    Success,
+    NotFound,
+    Forbidden
+}
+
 public class AssetService
 {
     private readonly AssetDbContext _db;
@@ -54,7 +61,7 @@ public class AssetService
         return _db.Assets.AsNoTracking().FirstOrDefault(a => a.Id == id);
     }
 
-    public Asset CreateAsset(CreateAssetRequest request)
+    public Asset CreateAsset(CreateAssetRequest request, string userId)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
             throw new ArgumentException("Name is required.");
@@ -68,6 +75,9 @@ public class AssetService
         if (request.Price.Value < 0)
             throw new ArgumentException("Price must be 0 or greater.");
 
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("Authenticated user is required.");
+
         var asset = new Asset
         {
             Id = Guid.NewGuid().ToString(),
@@ -75,7 +85,7 @@ public class AssetService
             Description = request.Description,
             Price = request.Price,
             CreatedAt = DateTime.UtcNow.ToString("o"),
-            UserId = request.UserId ?? string.Empty
+            UserId = userId
         };
 
         _db.Assets.Add(asset);
@@ -84,10 +94,12 @@ public class AssetService
         return asset;
     }
 
-    public bool UpdateAsset(string id, UpdateAssetRequest request)
+    public AssetMutationResult UpdateAsset(string id, UpdateAssetRequest request, string userId)
     {
         var asset = _db.Assets.FirstOrDefault(a => a.Id == id);
-        if (asset is null) return false;
+        if (asset is null) return AssetMutationResult.NotFound;
+
+        if (asset.UserId != userId) return AssetMutationResult.Forbidden;
 
         if (request.Name is not null && string.IsNullOrWhiteSpace(request.Name))
             throw new ArgumentException("Name cannot be empty.");
@@ -104,17 +116,19 @@ public class AssetService
 
         _db.SaveChanges();
 
-        return true;
+        return AssetMutationResult.Success;
     }
 
-    public bool DeleteAsset(string id)
+    public AssetMutationResult DeleteAsset(string id, string userId)
     {
         var asset = _db.Assets.FirstOrDefault(a => a.Id == id);
-        if (asset is null) return false;
+        if (asset is null) return AssetMutationResult.NotFound;
+
+        if (asset.UserId != userId) return AssetMutationResult.Forbidden;
 
         _db.Assets.Remove(asset);
         _db.SaveChanges();
 
-        return true;
+        return AssetMutationResult.Success;
     }
 }

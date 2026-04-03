@@ -3,21 +3,24 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
+using backend.Configuration;
 using backend.Data;
+using backend.Models;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
-using backend.Models;
+using Microsoft.Extensions.Options;
 
 namespace backend.Services;
 
 public class AuthService
 {
-    private readonly string _jwtSecret = "your-super-secret-jwt-key-here-make-it-long-and-secure"; // Move to config later
     private readonly AssetDbContext _db;
+    private readonly JwtOptions _jwtOptions;
 
-    public AuthService(AssetDbContext db)
+    public AuthService(AssetDbContext db, IOptions<JwtOptions> jwtOptions)
     {
         _db = db;
+        _jwtOptions = jwtOptions.Value;
     }
     
     public (bool Success, string? Error) Register(RegisterRequest request)
@@ -75,14 +78,14 @@ public class AuthService
             new Claim(ClaimTypes.Email, user.Email)
         };
         
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecret));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         
         var token = new JwtSecurityToken(
-            issuer: "asset-manager",
-            audience: "asset-manager-users",
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             claims: claims,
-            expires: DateTime.Now.AddHours(1),
+            expires: DateTime.UtcNow.AddHours(_jwtOptions.ExpirationHours),
             signingCredentials: creds
         );
         

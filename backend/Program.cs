@@ -1,4 +1,5 @@
 // backend/Program.cs
+using backend.Configuration;
 using backend.Data;
 using backend.Endpoints;
 using backend.Services;
@@ -39,6 +40,14 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+
+if (!builder.Environment.IsDevelopment() && jwtOptions.Secret == "development-only-super-secret-jwt-key-change-me")
+{
+    throw new InvalidOperationException("Jwt:Secret must be configured for non-development environments.");
+}
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -49,9 +58,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "asset-manager",
-            ValidAudience = "asset-manager-users",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-super-secret-jwt-key-here-make-it-long-and-secure"))
+            ValidIssuer = jwtOptions.Issuer,
+            ValidAudience = jwtOptions.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret))
         };
     });
 

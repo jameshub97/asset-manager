@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import UpdateAsset from './UpdateAsset.vue'
 import PriceDistributionDetail from './PriceDistributionDetail.vue'
 import type { Asset } from '@/services/api'
@@ -54,10 +54,6 @@ const assetCardClass = computed(() => {
   return 'asset-card-compact'
 })
 
-onMounted(() => {
-  store.fetchAssets()
-})
-
 const handleEdit = (asset: Asset) => {
   editingAsset.value = asset
 }
@@ -67,7 +63,7 @@ const handleUpdateClose = () => {
 }
 
 const handleDetailClose = () => {
-  store.selectedAsset = null
+  store.clearSelectedAsset()
 }
 
 const clearLookup = () => {

@@ -1,4 +1,5 @@
 // backend/Endpoints/AssetEndpoints.cs
+using System.Security.Claims;
 using backend.Models;
 using backend.Services;
 
@@ -24,11 +25,17 @@ public static class AssetEndpoints
         });
         
         // POST create
-        group.MapPost("/", (CreateAssetRequest request, AssetService service) =>
+        group.MapPost("/", (CreateAssetRequest request, ClaimsPrincipal user, AssetService service) =>
         {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
             try
             {
-                var asset = service.CreateAsset(request);
+                var asset = service.CreateAsset(request, userId);
                 return Results.Created($"/api/assets/{asset.Id}", asset);
             }
             catch (ArgumentException ex)
@@ -38,13 +45,24 @@ public static class AssetEndpoints
         }).RequireAuthorization();
         
         // PUT update
-        group.MapPut("/{id}", (string id, UpdateAssetRequest request, AssetService service) =>
+        group.MapPut("/{id}", (string id, UpdateAssetRequest request, ClaimsPrincipal user, AssetService service) =>
         {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
             try
             {
-                return service.UpdateAsset(id, request)
-                    ? Results.Ok(service.GetAsset(id))
-                    : Results.NotFound();
+                return service.UpdateAsset(id, request, userId) switch
+                {
+                    AssetMutationResult.Success => Results.Ok(service.GetAsset(id)),
+                    AssetMutationResult.Forbidden => Results.Json(
+                        new { message = "You can only update assets you own." },
+                        statusCode: StatusCodes.Status403Forbidden),
+                    _ => Results.NotFound(new { message = $"Asset {id} not found" }),
+                };
             }
             catch (ArgumentException ex)
             {
@@ -53,11 +71,22 @@ public static class AssetEndpoints
         }).RequireAuthorization();
         
         // DELETE
-        group.MapDelete("/{id}", (string id, AssetService service) =>
+        group.MapDelete("/{id}", (string id, ClaimsPrincipal user, AssetService service) =>
         {
-            return service.DeleteAsset(id) 
-                ? Results.NoContent()
-                : Results.NotFound();
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            return service.DeleteAsset(id, userId) switch
+            {
+                AssetMutationResult.Success => Results.NoContent(),
+                AssetMutationResult.Forbidden => Results.Json(
+                    new { message = "You can only delete assets you own." },
+                    statusCode: StatusCodes.Status403Forbidden),
+                _ => Results.NotFound(new { message = $"Asset {id} not found" }),
+            };
         }).RequireAuthorization();
     }
 }

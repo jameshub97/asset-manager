@@ -1,4 +1,7 @@
-export const API_BASE = 'http://localhost:5001/api'
+const DEFAULT_API_BASE = 'http://localhost:5001/api'
+
+export const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || DEFAULT_API_BASE
 
 export interface Asset {
   id?: string
@@ -67,6 +70,29 @@ const normalizePagedAssets = (value: unknown): PagedResponse<Asset> | Asset[] =>
   }
 }
 
+const getErrorMessage = async (response: Response): Promise<string> => {
+  const defaultMessage = `API error: ${response.status}`
+  const contentType = response.headers.get('content-type') ?? ''
+
+  try {
+    if (contentType.includes('application/json')) {
+      const payload = await response.json()
+      if (isRecord(payload)) {
+        const message = payload.message ?? payload.Message ?? payload.error ?? payload.Error
+        if (typeof message === 'string' && message.trim()) {
+          return message
+        }
+      }
+      return defaultMessage
+    }
+
+    const text = await response.text()
+    return text.trim() || defaultMessage
+  } catch {
+    return defaultMessage
+  }
+}
+
 export const api = {
   async request(endpoint: string, options?: RequestInit) {
     const token = localStorage.getItem('authToken')
@@ -83,12 +109,17 @@ export const api = {
     })
 
     if (!response.ok) {
+      const message = await getErrorMessage(response)
+
       if (response.status === 401) {
         localStorage.removeItem('authToken')
         localStorage.removeItem('username')
-        throw new Error('Unauthorized. Please log in again.')
+        localStorage.removeItem('userId')
+        localStorage.removeItem('isGuest')
+        throw new Error(message)
       }
-      throw new Error(`API error: ${response.status}`)
+
+      throw new Error(message)
     }
 
     if (response.status === 204 || response.headers.get('content-length') === '0') {
@@ -108,7 +139,7 @@ export const api = {
     return normalizeAsset(payload)
   },
 
-  async createAsset(data: Omit<Asset, 'id'>): Promise<Asset> {
+  async createAsset(data: Pick<Asset, 'name' | 'description' | 'price'>): Promise<Asset> {
     const payload = await this.request('/assets', {
       method: 'POST',
       body: JSON.stringify(data),

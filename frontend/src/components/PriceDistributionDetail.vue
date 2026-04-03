@@ -33,16 +33,7 @@ const chartView = ref<'bars' | 'line'>('bars')
 watch(
 	() => props.asset,
 	(currentAsset) => {
-		if (!currentAsset?.id) {
-			if (store.comparisonAssets.length === 1) {
-				store.clearComparison()
-			}
-			return
-		}
-
-		if (store.comparisonAssets.length < 2) {
-			store.comparisonAssets = [currentAsset]
-		}
+		store.syncComparisonSelection(currentAsset)
 	},
 	{ immediate: true },
 )

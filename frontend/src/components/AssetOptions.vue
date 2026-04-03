@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { useAssetStore } from '@/stores/assetstore'
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 
 const store = useAssetStore()
 const selectedAssetId = ref('')
-
-onMounted(() => {
-  store.fetchAssets()
-})
 </script>
 
 <template>
